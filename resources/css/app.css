@@ -1,0 +1,70 @@
+@import 'tailwindcss';
+
+@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
+@source '../../storage/framework/views/*.php';
+@source '../views/**/*.blade.php';
+@source '../js/**/*.{vue,js,ts,jsx,tsx}';
+
+@theme {
+    --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+
+    /* Royal Blue Palette (Deep, Elegant & Clean) */
+    --color-royal-50: #f0f5ff;
+    --color-royal-100: #e0ebff;
+    --color-royal-200: #c7dbfe;
+    --color-royal-300: #9fc2fd;
+    --color-royal-400: #709ffb;
+    --color-royal-500: #4378f7;
+    --color-royal-600: #2554ed;
+    --color-royal-700: #1d3fd6;
+    --color-royal-800: #1b33ad;
+    --color-royal-900: #1b2f88;
+    --color-royal-950: #111c54;
+}
+
+@layer base {
+    *, ::after, ::before {
+        box-sizing: border-box;
+    }
+
+    html, body {
+        max-width: 100%;
+        overflow-x: hidden;
+    }
+
+    html {
+        font-family: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+        text-rendering: optimizeLegibility;
+        letter-spacing: -0.011em;
+    }
+}
+
+@keyframes line-shadow {
+    0% {
+        background-position: 0 0;
+    }
+    100% {
+        background-position: 100% -100%;
+    }
+}
+
+.animate-line-shadow {
+    animation: line-shadow 15s linear infinite;
+}
+
+@keyframes orbit {
+    0% {
+        transform: rotate(calc(var(--angle) * 1deg)) translateY(calc(var(--radius) * 1px)) rotate(calc(var(--angle) * -1deg));
+    }
+    100% {
+        transform: rotate(calc(var(--angle) * 1deg + 360deg)) translateY(calc(var(--radius) * 1px)) rotate(calc((var(--angle) * -1deg) - 360deg));
+    }
+}
+
+.animate-orbit {
+    animation: orbit calc(var(--duration) * 1s) linear infinite;
+}
+
+
