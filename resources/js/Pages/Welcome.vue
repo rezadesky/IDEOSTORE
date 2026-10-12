@@ -8,16 +8,56 @@ import FaqSection from '../Components/FaqSection.vue';
 import FooterSection from '../Components/FooterSection.vue';
 
 const headlines = [
-    { prefix: 'Semua Aplikasi Premium, Satu Tempat di', highlight: 'Ideostore' },
-    { prefix: 'Upgrade Produktivitas dengan', highlight: 'Aplikasi Premium' },
-    { prefix: 'Aplikasi Premium,', highlight: 'Harga Bersahabat' },
-    { prefix: 'Solusi Digital Terbaik untuk', highlight: 'Kebutuhanmu' },
-    { prefix: 'Temukan Beragam Aplikasi Favoritmu di', highlight: 'Ideostore' },
-    { prefix: 'Semua Kebutuhan Digital dalam', highlight: 'Satu Platform' },
-    { prefix: 'Maksimalkan Potensimu dengan', highlight: 'Tools Premium' },
-    { prefix: 'Langganan Aplikasi Jadi', highlight: 'Lebih Mudah' },
-    { prefix: 'Pilihan Aplikasi Premium untuk', highlight: 'Semua Kebutuhan' },
-    { prefix: 'Saatnya Beralih ke Pengalaman', highlight: 'Digital Premium' }
+    {
+        prefix: 'Semua Aplikasi Premium, Satu Tempat di',
+        highlight: 'Ideostore',
+        description: 'Temukan berbagai aplikasi premium favorit, mulai dari AI, desain grafis, hingga tools produktivitas. Semua kebutuhan digitalmu tersedia dalam satu platform yang praktis dan mudah dijelajahi.'
+    },
+    {
+        prefix: 'Upgrade Produktivitas dengan',
+        highlight: 'Aplikasi Premium',
+        description: 'Tingkatkan produktivitas dan efisiensi kerja dengan berbagai aplikasi premium pilihan. Dukung aktivitas belajar, pekerjaan, dan proyek kreatifmu dengan tools digital yang sesuai kebutuhan.'
+    },
+    {
+        prefix: 'Aplikasi Premium,',
+        highlight: 'Harga Bersahabat',
+        description: 'Nikmati berbagai pilihan aplikasi premium dengan harga yang kompetitif. Temukan paket langganan yang sesuai dengan kebutuhan dan anggaranmu tanpa mengorbankan kenyamanan bertransaksi.'
+    },
+    {
+        prefix: 'Solusi Digital Terbaik untuk',
+        highlight: 'Kebutuhanmu',
+        description: 'Dari kecerdasan buatan hingga desain kreatif, temukan berbagai solusi digital untuk mendukung aktivitas sehari-hari. Ideostore hadir untuk membantu kamu menemukan aplikasi yang tepat dalam satu tempat.'
+    },
+    {
+        prefix: 'Temukan Aplikasi Favoritmu di',
+        highlight: 'Ideostore',
+        description: 'Jelajahi beragam produk digital dan temukan aplikasi yang paling sesuai dengan kebutuhanmu. Dengan pilihan kategori yang beragam, mencari layanan premium favorit kini menjadi lebih mudah dan praktis.'
+    },
+    {
+        prefix: 'Semua Kebutuhan Digital dalam',
+        highlight: 'Satu Platform',
+        description: 'Tak perlu bingung mencari layanan digital di berbagai tempat. Ideostore menghadirkan beragam pilihan aplikasi dan langganan premium yang memudahkanmu menemukan produk sesuai kebutuhan.'
+    },
+    {
+        prefix: 'Maksimalkan Potensimu dengan',
+        highlight: 'Tools Premium',
+        description: 'Kembangkan kreativitas, tingkatkan efisiensi, dan selesaikan pekerjaan dengan lebih optimal. Temukan tools premium yang mendukung produktivitas serta membantumu mencapai hasil terbaik dalam setiap aktivitas.'
+    },
+    {
+        prefix: 'Langganan Aplikasi Jadi',
+        highlight: 'Lebih Mudah',
+        description: 'Pilih aplikasi favorit, temukan paket yang sesuai, dan lakukan pemesanan melalui proses yang praktis. Ideostore membantu menyederhanakan pengalaman belanja produk digital agar lebih nyaman dan efisien.'
+    },
+    {
+        prefix: 'Pilihan Aplikasi Premium untuk',
+        highlight: 'Semua Kebutuhan',
+        description: 'Temukan berbagai aplikasi untuk belajar, bekerja, berbisnis, dan berkarya dalam satu katalog. Apa pun kebutuhan digitalmu, jelajahi pilihan produk yang dapat mendukung aktivitasmu sehari-hari.'
+    },
+    {
+        prefix: 'Saatnya Beralih ke Pengalaman',
+        highlight: 'Digital Premium',
+        description: 'Tingkatkan pengalaman menggunakan teknologi dengan berbagai aplikasi dan layanan digital pilihan. Temukan tools yang tepat untuk mendukung ide, mempercepat pekerjaan, dan membuka lebih banyak peluang produktivitas.'
+    }
 ];
 
 const currentIndex = ref(0);
@@ -26,7 +66,7 @@ let timer = null;
 onMounted(() => {
     timer = setInterval(() => {
         currentIndex.value = (currentIndex.value + 1) % headlines.length;
-    }, 3800);
+    }, 4500);
 });
 
 onBeforeUnmount(() => {
@@ -77,15 +117,15 @@ onBeforeUnmount(() => {
         <!-- Main Hero Section: 2 Kolom (Proporsional & Clean) -->
         <main class="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 py-6 sm:py-8 flex flex-col justify-center">
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8 items-center">
-                <!-- Left Column: Rotating Animated Line Shadow Text -->
-                <div class="flex flex-col items-start text-left min-h-[110px] sm:min-h-[130px] lg:min-h-[140px] justify-center relative">
+                <!-- Left Column: Rotating Animated Line Shadow Text & Deskripsi -->
+                <div class="flex flex-col items-start text-left min-h-[160px] sm:min-h-[180px] lg:min-h-[200px] justify-center relative">
                     <AnimatePresence mode="wait">
                         <motion.div
                             :key="currentIndex"
                             :initial="{ opacity: 0, y: 14, filter: 'blur(3px)' }"
                             :animate="{ opacity: 1, y: 0, filter: 'blur(0px)' }"
                             :exit="{ opacity: 0, y: -14, filter: 'blur(3px)' }"
-                            :transition="{ duration: 0.4, ease: 'easeInOut' }"
+                            :transition="{ duration: 0.45, ease: 'easeInOut' }"
                             class="w-full"
                         >
                             <h1 class="text-2xl sm:text-3xl lg:text-[2.5rem] font-extrabold tracking-tight text-slate-900 leading-[1.25] sm:leading-[1.22]">
@@ -94,6 +134,10 @@ onBeforeUnmount(() => {
                                     <LineShadowText :text="headlines[currentIndex].highlight" shadowColor="#2554ed" class="text-royal-800" />
                                 </span>
                             </h1>
+
+                            <p class="mt-3 sm:mt-4 text-xs sm:text-sm text-slate-600 leading-relaxed max-w-xl">
+                                {{ headlines[currentIndex].description }}
+                            </p>
                         </motion.div>
                     </AnimatePresence>
                 </div>
@@ -109,36 +153,36 @@ onBeforeUnmount(() => {
                 </motion.div>
             </div>
 
-            <!-- Card Cek Pesanan Kamu (Proportional & Polished) -->
+            <!-- Card Cek Pesanan Kamu (Royal Blue Theme) -->
             <motion.div
                 :initial="{ opacity: 0, y: 16 }"
                 :animate="{ opacity: 1, y: 0 }"
                 :transition="{ duration: 0.5, delay: 0.25, ease: 'easeOut' }"
                 class="mt-6 sm:mt-8 w-full"
             >
-                <div class="relative bg-white rounded-xl sm:rounded-2xl p-4 sm:p-5 lg:p-6 shadow-sm shadow-slate-200/80 border border-slate-200/80 overflow-hidden">
-                    <!-- Subtle Background Glow Accent -->
-                    <div class="absolute -top-10 -right-10 w-36 h-36 bg-royal-100/50 rounded-full blur-2xl pointer-events-none"></div>
+                <div class="relative bg-gradient-to-r from-royal-900 via-royal-800 to-royal-900 rounded-xl sm:rounded-2xl p-4 sm:p-5 lg:p-6 shadow-lg shadow-royal-950/20 border border-royal-700/60 overflow-hidden text-white">
+                    <!-- Subtle Glow Accent -->
+                    <div class="absolute -top-12 -right-12 w-44 h-44 bg-royal-500/25 rounded-full blur-2xl pointer-events-none"></div>
 
-                    <div class="relative flex flex-col md:flex-row md:items-center justify-between gap-4 sm:gap-6">
+                    <div class="relative flex flex-col md:flex-row md:items-center justify-between gap-4 sm:gap-6 z-10">
                         <!-- Card Header / Title Info -->
                         <div class="flex items-center gap-3 shrink-0">
-                            <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-royal-50 text-royal-700 flex items-center justify-center shrink-0 border border-royal-100 shadow-2xs">
-                                <svg class="w-4.5 h-4.5 sm:w-5 sm:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-white/10 text-white flex items-center justify-center shrink-0 border border-white/15 backdrop-blur-md shadow-2xs">
+                                <svg class="w-4.5 h-4.5 sm:w-5 sm:h-5 text-royal-200" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                                 </svg>
                             </div>
                             <div>
-                                <h2 class="text-base sm:text-lg font-bold text-slate-900 tracking-tight">
+                                <h2 class="text-base sm:text-lg font-bold text-white tracking-tight">
                                     Cek pesanan kamu
                                 </h2>
-                                <p class="text-xs text-slate-500">
+                                <p class="text-xs text-royal-200/80">
                                     Lacak status lisensi & aktivasi secara realtime
                                 </p>
                             </div>
                         </div>
 
-                        <!-- Input Form (Clean Proportional Form) -->
+                        <!-- Input Form (Clean Proportional Form on Royal Blue) -->
                         <form @submit.prevent class="flex-1 flex flex-col sm:flex-row gap-2 sm:gap-2.5 max-w-2xl">
                             <div class="relative flex-1">
                                 <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
@@ -149,17 +193,17 @@ onBeforeUnmount(() => {
                                 <input
                                     type="text"
                                     placeholder="Masukkan nomor pesanan atau nomor WhatsApp"
-                                    class="w-full pl-9 sm:pl-10 pr-3 py-2 sm:py-2.5 rounded-lg sm:rounded-xl bg-slate-50 border border-slate-200 text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-royal-600 focus:border-royal-600 focus:bg-white transition-all"
+                                    class="w-full pl-9 sm:pl-10 pr-3 py-2 sm:py-2.5 rounded-lg sm:rounded-xl bg-white text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-royal-400 focus:bg-white shadow-inner/5 transition-all"
                                 />
                             </div>
                             <motion.button
                                 type="submit"
                                 :while-hover="{ scale: 1.02 }"
                                 :while-tap="{ scale: 0.96 }"
-                                class="inline-flex items-center justify-center gap-1.5 px-4 sm:px-5 py-2 sm:py-2.5 rounded-lg sm:rounded-xl bg-royal-700 hover:bg-royal-800 active:bg-royal-900 text-white text-xs sm:text-sm font-semibold shadow-xs shadow-royal-700/20 transition-all select-none touch-manipulation cursor-pointer shrink-0"
+                                class="inline-flex items-center justify-center gap-1.5 px-5 sm:px-6 py-2 sm:py-2.5 rounded-lg sm:rounded-xl bg-white text-royal-900 hover:bg-royal-50 active:bg-royal-100 text-xs sm:text-sm font-bold shadow-md shadow-royal-950/25 transition-all select-none touch-manipulation cursor-pointer shrink-0"
                             >
                                 <span>Lacak Pesanan</span>
-                                <svg class="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
+                                <svg class="w-3.5 h-3.5 sm:w-4 sm:h-4 text-royal-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.4">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3" />
                                 </svg>
                             </motion.button>
