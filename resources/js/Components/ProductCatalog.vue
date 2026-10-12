@@ -77,6 +77,7 @@ const startPolling = (orderId) => {
     }, 4000);
 };
 
+
 // Handle Checkout Otomatis
 const handleDirectCheckout = async () => {
     if (!selectedProduct.value) return;
@@ -704,6 +705,7 @@ const filteredCategories = computed(() => {
                             <span class="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
                             <span>Mendeteksi pembayaran otomatis...</span>
                         </div>
+
                     </div>
 
                     <!-- Jika Status SUCCESS (Akun / Lisensi Terbit Otomatis) -->

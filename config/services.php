@@ -40,4 +40,9 @@ return [
         'key' => env('WAROENGKUY_API_KEY'),
     ],
 
+    'waroengpay' => [
+        'url' => env('WAROENGPAY_API_URL', 'https://waroengpay.com'),
+        'key' => env('WAROENGPAY_API_KEY'),
+    ],
+
 ];

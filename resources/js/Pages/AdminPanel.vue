@@ -198,31 +198,39 @@ const filteredOrders = computed(() => {
     });
 });
 
-// Update Status Order Action (Tersambung ke /api/orders/update-status)
-const updatingOrderId = ref(null);
-const updateStatus = async (order, newStatus) => {
-    updatingOrderId.value = order.id;
+// Sinkronkan Status Pesanan Realtime dari Server API (Force Sync)
+const syncingOrderId = ref(null);
+const syncOrderStatus = async (order) => {
+    syncingOrderId.value = order.id || order.ref;
     try {
-        const res = await fetch('/api/orders/update-status', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                order_id: order.id || order.ref,
-                status: newStatus
-            })
-        });
+        const res = await fetch(`/api/order/${order.id || order.ref}`);
         const data = await res.json();
-        if (data.ok) {
-            order.status = newStatus;
+        if (data.ok && data.order) {
+            const updated = data.order;
+            order.status = in_array_status(updated.status);
+            if (updated.accounts && updated.accounts.length) {
+                order.accounts = updated.accounts;
+            }
+            if (updated.note) {
+                order.note = updated.note;
+            }
+            alert(`Status berhasil disinkronkan: ${order.status.toUpperCase()}`);
         } else {
-            alert(data.error || 'Gagal mengupdate status pesanan.');
+            alert(data.error || 'Gagal menyinkronkan status dari server pusat.');
         }
     } catch (e) {
-        alert('Gagal menghubungi server untuk update status.');
+        alert('Gagal menghubungi server untuk sinkronisasi.');
     } finally {
-        updatingOrderId.value = null;
+        syncingOrderId.value = null;
     }
 };
+
+const in_array_status = (st) => {
+    if (st === 'paid' || st === 'success' || st === 'completed') return 'completed';
+    if (st === 'processing') return 'processing';
+    return st || 'pending';
+};
+
 
 // Tambah Produk Baru Milik Toko Sendiri (Tersambung ke /api/products/custom)
 const saveProduct = async () => {
@@ -649,12 +657,13 @@ const saveProduct = async () => {
                                                 <button
                                                     type="button"
                                                     @click="openDetail(order)"
-                                                    class="px-2 py-1 rounded-md bg-slate-100 hover:bg-slate-200 text-slate-700 text-[10px] font-medium transition-colors cursor-pointer"
+                                                    class="px-2.5 py-1 rounded-md bg-slate-100 hover:bg-slate-200 text-slate-700 text-[10px] font-semibold transition-colors cursor-pointer"
                                                 >
                                                     Detail
                                                 </button>
+                                                <!-- Jika produk manual toko sendiri: ada tombol Selesai manual -->
                                                 <button
-                                                    v-if="order.status !== 'completed' && order.status !== 'success'"
+                                                    v-if="!order.is_api && order.status !== 'completed' && order.status !== 'success'"
                                                     type="button"
                                                     :disabled="updatingOrderId === order.id"
                                                     @click="updateStatus(order, 'completed')"
@@ -662,6 +671,13 @@ const saveProduct = async () => {
                                                 >
                                                     {{ updatingOrderId === order.id ? '...' : 'Selesai' }}
                                                 </button>
+                                                <!-- Jika pesanan dari API Waroengkuy: otomatis diproses sistem pusat -->
+                                                <span
+                                                    v-else-if="order.is_api"
+                                                    class="text-[9px] font-bold text-slate-400 bg-slate-100 px-2 py-0.5 rounded"
+                                                >
+                                                    Auto API
+                                                </span>
                                             </div>
                                         </td>
                                     </tr>
@@ -1021,8 +1037,22 @@ const saveProduct = async () => {
                 <div class="flex items-center justify-between border-t border-slate-100 pt-3">
                     <span class="text-xs text-slate-400">Status: <strong class="capitalize text-slate-700">{{ selectedOrder.status }}</strong></span>
                     <div class="flex items-center gap-2">
+                        <!-- Tombol Force Sync Status Terkini dari Server API -->
                         <button
-                            v-if="selectedOrder.status !== 'completed' && selectedOrder.status !== 'success'"
+                            type="button"
+                            :disabled="syncingOrderId === (selectedOrder.id || selectedOrder.ref)"
+                            @click="syncOrderStatus(selectedOrder)"
+                            class="px-3 py-1.5 rounded-lg bg-royal-50 hover:bg-royal-100 text-royal-700 font-semibold text-xs border border-royal-200 transition-colors cursor-pointer flex items-center gap-1.5 disabled:opacity-60"
+                        >
+                            <svg :class="['w-3.5 h-3.5', syncingOrderId === (selectedOrder.id || selectedOrder.ref) ? 'animate-spin' : '']" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                            </svg>
+                            <span>{{ syncingOrderId === (selectedOrder.id || selectedOrder.ref) ? 'Sinkron...' : 'Cek Status API' }}</span>
+                        </button>
+
+                        <!-- Tombol Selesai hanya untuk produk manual toko sendiri -->
+                        <button
+                            v-if="!selectedOrder.is_api && selectedOrder.status !== 'completed' && selectedOrder.status !== 'success'"
                             type="button"
                             :disabled="updatingOrderId === selectedOrder.id"
                             @click="updateStatus(selectedOrder, 'completed'); showDetailModal = false;"
