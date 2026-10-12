@@ -348,16 +348,18 @@ const filteredCategories = computed(() => {
                         </svg>
 
                         <span>{{ chip.label }}</span>
-                        <span class="text-[10px] px-1 py-0.2 rounded-full" :class="activeFilter === chip.id ? 'bg-royal-200/70 text-royal-800' : 'bg-slate-100 text-slate-500'">{{ chip.count }}</span>
+                        <span class="text-[10px] px-1 py-0.2 rounded-full font-semibold" :class="activeFilter === chip.id ? 'bg-royal-200 text-royal-950' : 'bg-slate-200 text-slate-800'">{{ chip.count }}</span>
                     </button>
                 </div>
 
                 <div class="flex items-center gap-2">
                     <!-- Dropdown Urutkan -->
                     <div class="flex items-center gap-1.5 text-xs text-slate-500">
-                        <span class="hidden sm:inline font-medium">Urutkan:</span>
+                        <label for="sortProductSelect" class="hidden sm:inline font-medium">Urutkan:</label>
                         <select
+                            id="sortProductSelect"
                             v-model="sortBy"
+                            aria-label="Urutkan produk berdasarkan"
                             class="px-2.5 py-1.5 rounded-lg sm:rounded-xl bg-white border border-slate-200 text-xs font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-royal-600 shadow-2xs cursor-pointer"
                         >
                             <option value="default">Rekomendasi</option>
@@ -392,7 +394,7 @@ const filteredCategories = computed(() => {
                 <h3 class="text-sm sm:text-base font-bold text-slate-900 tracking-tight">
                     {{ category.title }}
                 </h3>
-                <span class="text-[11px] font-semibold text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded-md">
+                <span class="text-[11px] font-bold text-slate-700 bg-slate-200 px-1.5 py-0.5 rounded-md">
                     {{ category.filteredProducts.length }}
                 </span>
             </div>
@@ -422,7 +424,7 @@ const filteredCategories = computed(() => {
                         <!-- Badge Pengiriman / Otomatis -->
                         <div
                             class="absolute top-1.5 left-1.5 text-[9px] font-bold px-1.5 py-0.5 rounded shadow-xs uppercase tracking-wider text-white"
-                            :class="product.isAuto ? 'bg-emerald-600' : 'bg-royal-600'"
+                            :class="product.isAuto ? 'bg-emerald-700' : 'bg-royal-700'"
                         >
                             {{ product.isAuto ? 'Otomatis' : 'Manual' }}
                         </div>
@@ -448,13 +450,13 @@ const filteredCategories = computed(() => {
                             <div class="flex flex-wrap items-center gap-1 mt-1">
                                 <span
                                     v-if="product.discount"
-                                    class="text-[9px] font-bold text-emerald-600 bg-emerald-50 px-1 py-0.2 rounded"
+                                    class="text-[9px] font-bold text-emerald-800 bg-emerald-100 px-1 py-0.2 rounded"
                                 >
                                     {{ product.discount }}
                                 </span>
                                 <span
                                     v-if="product.warrantyDays"
-                                    class="text-[9px] font-semibold text-royal-700 bg-royal-50 px-1 py-0.2 rounded"
+                                    class="text-[9px] font-semibold text-royal-900 bg-royal-100 px-1 py-0.2 rounded"
                                 >
                                     Garansi {{ product.warrantyDays }}h
                                 </span>
@@ -467,7 +469,7 @@ const filteredCategories = computed(() => {
                                 </span>
                                 <span
                                     v-if="product.originalPrice"
-                                    class="text-[10px] text-slate-400 line-through"
+                                    class="text-[10px] text-slate-500 line-through"
                                 >
                                     {{ product.originalPrice }}
                                 </span>
@@ -475,11 +477,11 @@ const filteredCategories = computed(() => {
                         </div>
 
                         <!-- Card Footer -->
-                        <div class="mt-2 pt-1.5 border-t border-slate-100 flex items-center justify-between text-[10px] text-slate-500">
-                            <span :class="product.isStockReady ? 'text-emerald-600 font-semibold' : 'text-slate-400'">
+                        <div class="mt-2 pt-1.5 border-t border-slate-100 flex items-center justify-between text-[10px] text-slate-600">
+                            <span :class="product.isStockReady ? 'text-emerald-700 font-semibold' : 'text-slate-500'">
                                 {{ product.stockText }}
                             </span>
-                            <span class="text-royal-700 font-bold group-hover:underline">Beli &rarr;</span>
+                            <span class="text-royal-800 font-bold group-hover:underline">Beli &rarr;</span>
                         </div>
                     </div>
                 </motion.div>

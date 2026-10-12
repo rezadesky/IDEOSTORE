@@ -2,7 +2,14 @@
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
     <head>
         <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="description" content="Ideostore - Pusat langganan aplikasi premium terpercaya, akun AI, produktivitas, dan hiburan dengan sistem otomatis QRIS.">
+        <link rel="canonical" href="{{ url()->current() }}">
+        <meta name="robots" content="index, follow">
+        <meta property="og:title" content="Ideostore - Pusat Layanan Aplikasi Premium">
+        <meta property="og:description" content="Pusat langganan aplikasi premium terpercaya, akun AI, produktivitas, dan hiburan dengan sistem otomatis QRIS.">
+        <meta property="og:url" content="{{ url()->current() }}">
+        <meta property="og:type" content="website">
 
         <title inertia>{{ config('app.name', 'Laravel') }}</title>
         <link rel="icon" type="image/png" href="/favicon.png">

@@ -22,12 +22,12 @@ const currentYear = new Date().getFullYear();
             </a>
 
             <!-- Tagline Ringkas -->
-            <p class="text-xs text-slate-500 max-w-sm">
+            <p class="text-xs text-slate-600 max-w-sm">
                 Toko aplikasi & lisensi digital premium terpercaya di Indonesia.
             </p>
 
             <!-- Copyright Center -->
-            <p class="text-[11px] sm:text-xs text-slate-400 mt-1">
+            <p class="text-[11px] sm:text-xs text-slate-600 mt-1">
                 © {{ currentYear }} Ideostore. All rights reserved.
             </p>
         </div>

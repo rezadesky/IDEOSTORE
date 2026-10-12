@@ -170,7 +170,7 @@ onBeforeUnmount(() => {
                                 </span>
                             </h1>
 
-                            <p class="mt-3 sm:mt-4 text-xs sm:text-sm text-slate-600 leading-relaxed max-w-xl">
+                            <p class="mt-3 sm:mt-4 text-xs sm:text-sm text-slate-700 leading-relaxed max-w-xl">
                                 {{ headlines[currentIndex].description }}
                             </p>
                         </motion.div>
