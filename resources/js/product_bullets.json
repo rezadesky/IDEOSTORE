@@ -1,0 +1,452 @@
+{
+  "capcut-pro": [
+    {
+      "type": "check",
+      "text": "Bisa di HP (Android/iOS) & PC"
+    },
+    {
+      "type": "check",
+      "text": "Login pakai akun dari toko"
+    },
+    {
+      "type": "cross",
+      "text": "Jangan ubah email/password akun"
+    },
+    {
+      "type": "check",
+      "text": "Simpan hasil edit sebelum masa aktif habis"
+    },
+    {
+      "type": "check",
+      "text": "Dikirim otomatis setelah bayar · bergaransi selama aktif"
+    }
+  ],
+  "google-mail": [
+    {
+      "type": "check",
+      "text": "Gsuite: akun @waroengsuite.id dibuat otomatis, berlaku sesuai durasi"
+    },
+    {
+      "type": "check",
+      "text": "Gmail: akun @gmail.com siap pakai"
+    },
+    {
+      "type": "check",
+      "text": "Bisa login di semua aplikasi & situs Google"
+    },
+    {
+      "type": "cross",
+      "text": "Jangan ubah nomor/pemulihan akun Gsuite"
+    },
+    {
+      "type": "check",
+      "text": "Dikirim otomatis setelah bayar"
+    }
+  ],
+  "hma-vpn": [
+    {
+      "type": "check",
+      "text": "Akses berupa Redeem Code"
+    },
+    {
+      "type": "check",
+      "text": "Bisa di Android, iOS, Windows & Mac"
+    },
+    {
+      "type": "check",
+      "text": "Login pakai akun dari toko"
+    },
+    {
+      "type": "check",
+      "text": "Max Login 10 Perangkat"
+    }
+  ],
+  "surfshark-vpn": [
+    {
+      "type": "check",
+      "text": "Bisa di Android, iOS, Windows, Mac & browser"
+    },
+    {
+      "type": "check",
+      "text": "Login pakai akun dari toko"
+    },
+    {
+      "type": "cross",
+      "text": "Jangan ubah email/password akun"
+    }
+  ],
+  "apple-music": [
+    {
+      "type": "check",
+      "text": "Undangan ke email (Apple Account) kamu"
+    },
+    {
+      "type": "check",
+      "text": "Bisa di iPhone, iPad, Mac & perangkat yang didukung"
+    },
+    {
+      "type": "check",
+      "text": "Isi email dengan benar saat checkout"
+    },
+    {
+      "type": "check",
+      "text": "Cek folder spam bila undangan belum masuk"
+    },
+    {
+      "type": "check",
+      "text": "Diproses admin setelah bayar"
+    }
+  ],
+  "vidio": [
+    {
+      "type": "cross",
+      "text": "HANYA di TV (Smart TV / Android TV)"
+    },
+    {
+      "type": "cross",
+      "text": "Tidak bisa di HP, tablet, atau browser"
+    },
+    {
+      "type": "check",
+      "text": "Cek TV mendukung aplikasi Vidio"
+    },
+    {
+      "type": "cross",
+      "text": "Jangan ubah data akun atau bagikan login"
+    },
+    {
+      "type": "check",
+      "text": "Dikirim otomatis setelah bayar"
+    }
+  ],
+  "remini-web": [
+    {
+      "type": "cross",
+      "text": "Hanya versi web (browser) — tidak di aplikasi"
+    },
+    {
+      "type": "check",
+      "text": "Berupa link redeem 7 hari"
+    },
+    {
+      "type": "cross",
+      "text": "Jangan bagikan link sebelum dipakai"
+    },
+    {
+      "type": "check",
+      "text": "Unduh hasil sebelum masa 7 hari habis"
+    },
+    {
+      "type": "check",
+      "text": "Dikirim otomatis setelah bayar"
+    }
+  ],
+  "meitu": [
+    {
+      "type": "check",
+      "text": "Bisa di aplikasi Android & iOS"
+    },
+    {
+      "type": "check",
+      "text": "Login pakai akun dari toko"
+    },
+    {
+      "type": "check",
+      "text": "Update aplikasi ke versi terbaru"
+    },
+    {
+      "type": "cross",
+      "text": "Jangan ubah data/pengaturan akun"
+    },
+    {
+      "type": "check",
+      "text": "Dikirim otomatis setelah bayar"
+    }
+  ],
+  "spotify-premium": [
+    {
+      "type": "check",
+      "text": "Bisa di HP, PC & browser"
+    },
+    {
+      "type": "check",
+      "text": "Login pakai akun dari toko (bukan akunmu)"
+    },
+    {
+      "type": "check",
+      "text": "Keluar dulu dari akun lama sebelum login"
+    },
+    {
+      "type": "cross",
+      "text": "Jangan ubah email/password/paket"
+    },
+    {
+      "type": "check",
+      "text": "Dikirim otomatis setelah bayar"
+    }
+  ],
+  "alight-motion": [
+    {
+      "type": "check",
+      "text": "Bisa di aplikasi Android & iOS (versi resmi)"
+    },
+    {
+      "type": "cross",
+      "text": "Jangan pakai APK modifikasi"
+    },
+    {
+      "type": "check",
+      "text": "Login pakai akun dari toko"
+    },
+    {
+      "type": "cross",
+      "text": "Jangan bagikan akun ke orang lain"
+    },
+    {
+      "type": "check",
+      "text": "Dikirim otomatis setelah bayar"
+    }
+  ],
+  "hbo-max": [
+    {
+      "type": "check",
+      "text": "Bisa di aplikasi & web HBO Max"
+    },
+    {
+      "type": "check",
+      "text": "Pakai profil yang ditentukan"
+    },
+    {
+      "type": "cross",
+      "text": "Jangan ubah pengaturan/profil orang lain"
+    },
+    {
+      "type": "check",
+      "text": "Isi nomor WhatsApp aktif"
+    },
+    {
+      "type": "check",
+      "text": "Diproses admin setelah bayar"
+    }
+  ],
+  "netflix-premium": [
+    {
+      "type": "check",
+      "text": "Akun sharing — dipakai bersama"
+    },
+    {
+      "type": "cross",
+      "text": "Hanya pakai profil yang ditentukan"
+    },
+    {
+      "type": "cross",
+      "text": "Jangan ubah password, email, atau profil"
+    },
+    {
+      "type": "check",
+      "text": "Bisa di HP, laptop, tablet & smart TV"
+    },
+    {
+      "type": "check",
+      "text": "Dikirim otomatis setelah bayar"
+    }
+  ],
+  "youtube": [
+    {
+      "type": "check",
+      "text": "Bisa di aplikasi YouTube & YouTube Music"
+    },
+    {
+      "type": "check",
+      "text": "Pakai akun toko atau akun milikmu"
+    },
+    {
+      "type": "check",
+      "text": "Isi email dengan benar saat checkout"
+    },
+    {
+      "type": "check",
+      "text": "Logout-login ulang bila Premium belum muncul"
+    },
+    {
+      "type": "check",
+      "text": "Diproses admin setelah bayar"
+    }
+  ],
+  "canva": [
+    {
+      "type": "check",
+      "text": "Diaktifkan di akun Canva milikmu (via email)"
+    },
+    {
+      "type": "check",
+      "text": "Isi Email Canva dengan benar saat checkout"
+    },
+    {
+      "type": "check",
+      "text": "Bisa di web & aplikasi Canva"
+    },
+    {
+      "type": "check",
+      "text": "Cek folder spam bila undangan belum masuk"
+    },
+    {
+      "type": "check",
+      "text": "Diproses admin setelah bayar"
+    }
+  ],
+  "zoom-pro": [
+    {
+      "type": "check",
+      "text": "Bisa di aplikasi Zoom & zoom.us"
+    },
+    {
+      "type": "check",
+      "text": "Peserta tak perlu akun berbayar"
+    },
+    {
+      "type": "check",
+      "text": "Simpan rekaman sebelum masa 14 hari habis"
+    },
+    {
+      "type": "cross",
+      "text": "Jangan ubah password/profil akun"
+    },
+    {
+      "type": "check",
+      "text": "Dikirim otomatis setelah bayar"
+    }
+  ],
+  "wink": [
+    {
+      "type": "check",
+      "text": "Bisa di aplikasi Android & iOS"
+    },
+    {
+      "type": "check",
+      "text": "Login pakai akun dari toko"
+    },
+    {
+      "type": "check",
+      "text": "Masa aktif 7 hari — siapkan video dulu"
+    },
+    {
+      "type": "check",
+      "text": "Simpan hasil ke galeri setelah ekspor"
+    },
+    {
+      "type": "check",
+      "text": "Dikirim otomatis setelah bayar"
+    }
+  ],
+  "scribd-pro": [
+    {
+      "type": "check",
+      "text": "Bisa di web & aplikasi Android/iOS"
+    },
+    {
+      "type": "check",
+      "text": "Login pakai akun dari toko"
+    },
+    {
+      "type": "cross",
+      "text": "Jangan bagikan akun ke orang lain"
+    },
+    {
+      "type": "check",
+      "text": "Jumlah unduhan mengikuti ketentuan Scribd"
+    },
+    {
+      "type": "check",
+      "text": "Dikirim otomatis setelah bayar"
+    }
+  ],
+  "chatgpt": [
+    {
+      "type": "cross",
+      "text": "TANPA GARANSI"
+    },
+    {
+      "type": "check",
+      "text": "Berupa invite ke workspace (setara Plus)"
+    },
+    {
+      "type": "check",
+      "text": "Bisa di web & aplikasi ChatGPT"
+    },
+    {
+      "type": "cross",
+      "text": "Jangan simpan data penting/rahasia"
+    },
+    {
+      "type": "check",
+      "text": "Diproses admin setelah bayar"
+    }
+  ],
+  "leonardo-ai": [
+    {
+      "type": "check",
+      "text": "Bisa di web & aplikasi Leonardo AI"
+    },
+    {
+      "type": "check",
+      "text": "Login pakai akun dari toko · 60K kredit"
+    },
+    {
+      "type": "cross",
+      "text": "Jangan bagikan atau ubah akun"
+    },
+    {
+      "type": "check",
+      "text": "Simpan hasil sebelum masa 1 bulan habis"
+    },
+    {
+      "type": "check",
+      "text": "Dikirim otomatis setelah bayar"
+    }
+  ],
+  "google-gemini": [
+    {
+      "type": "check",
+      "text": "1 Tahun: diaktifkan admin ke email kamu"
+    },
+    {
+      "type": "check",
+      "text": "18 Bulan: link redeem ke akun Google-mu"
+    },
+    {
+      "type": "check",
+      "text": "Bisa di gemini.google.com & aplikasi Gemini"
+    },
+    {
+      "type": "check",
+      "text": "Isi email dengan benar saat checkout"
+    },
+    {
+      "type": "check",
+      "text": "18 Bulan dikirim otomatis · 1 Tahun diproses admin"
+    }
+  ],
+  "higgsfield-plus": [
+    {
+      "type": "check",
+      "text": "Bisa di web higgsfield.ai (browser)"
+    },
+    {
+      "type": "check",
+      "text": "Login pakai akun dari toko"
+    },
+    {
+      "type": "check",
+      "text": "Unduh hasil sebelum masa 7 hari habis"
+    },
+    {
+      "type": "cross",
+      "text": "Jangan bagikan atau ubah akun"
+    },
+    {
+      "type": "check",
+      "text": "Dikirim otomatis setelah bayar"
+    }
+  ]
+}
