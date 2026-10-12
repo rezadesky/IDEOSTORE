@@ -7,6 +7,14 @@ import ProductCatalog from '../Components/ProductCatalog.vue';
 import FaqSection from '../Components/FaqSection.vue';
 import FooterSection from '../Components/FooterSection.vue';
 
+const props = defineProps({
+    version: String,
+    liveProducts: {
+        type: Array,
+        default: () => []
+    }
+});
+
 const headlines = [
     {
         prefix: 'Semua Aplikasi Premium, Satu Tempat di',
@@ -63,6 +71,35 @@ const headlines = [
 const currentIndex = ref(0);
 let timer = null;
 
+// Fitur Cek Pesanan Live API
+const orderQuery = ref('');
+const orderLoading = ref(false);
+const orderResult = ref(null);
+const orderError = ref('');
+
+const handleCheckOrder = async () => {
+    const q = orderQuery.value.trim();
+    if (!q) return;
+
+    orderLoading.value = true;
+    orderError.value = '';
+    orderResult.value = null;
+
+    try {
+        const res = await fetch(`/api/check-order?q=${encodeURIComponent(q)}`);
+        const data = await res.json();
+        if (data.ok && data.order) {
+            orderResult.value = data.order;
+        } else {
+            orderError.value = data.error || 'Pesanan tidak ditemukan. Pastikan nomor pesanan benar.';
+        }
+    } catch (err) {
+        orderError.value = 'Gagal menghubungi server. Silakan coba lagi.';
+    } finally {
+        orderLoading.value = false;
+    }
+};
+
 onMounted(() => {
     timer = setInterval(() => {
         currentIndex.value = (currentIndex.value + 1) % headlines.length;
@@ -81,33 +118,31 @@ onBeforeUnmount(() => {
             <div class="max-w-6xl mx-auto px-4 sm:px-6">
                 <div class="flex items-center justify-between h-14">
                     <!-- Brand / Logo -->
-                    <a href="/" class="flex items-center gap-2 group">
-                        <motion.div
-                            :while-hover="{ rotate: 8, scale: 1.05 }"
+                    <a href="/" class="flex items-center gap-2.5 group">
+                        <motion.img
+                            src="/logo.png"
+                            alt="Ideostore Logo"
+                            :while-hover="{ rotate: 6, scale: 1.05 }"
                             :while-tap="{ scale: 0.92 }"
-                            class="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-gradient-to-tr from-royal-800 to-royal-600 flex items-center justify-center text-white shadow-xs shadow-royal-900/25 transition-transform"
-                        >
-                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
-                            </svg>
-                        </motion.div>
-                        <span class="text-base font-bold tracking-tight text-slate-900">
+                            class="w-8 h-8 sm:w-9 sm:h-9 object-contain transition-transform"
+                        />
+                        <span class="text-base sm:text-lg font-bold tracking-tight text-slate-900">
                             Ideo<span class="text-royal-700">store</span>
                         </span>
                     </a>
 
                     <!-- Action: Pesanan -->
-                    <div class="flex items-center">
+                    <div class="flex items-center gap-2">
                         <motion.a
-                            href="#"
+                            href="#cek-pesanan"
                             :while-hover="{ scale: 1.03 }"
                             :while-tap="{ scale: 0.94 }"
-                            class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-royal-800 active:bg-royal-900 text-white text-xs font-semibold shadow-xs shadow-royal-950/20 transition-all select-none touch-manipulation"
+                            class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-royal-800 active:bg-royal-900 text-white text-xs font-semibold shadow-xs shadow-royal-950/20 transition-all select-none touch-manipulation cursor-pointer"
                         >
                             <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
                             </svg>
-                            <span>Pesanan</span>
+                            <span>Lacak Pesanan</span>
                         </motion.a>
                     </div>
                 </div>
@@ -155,10 +190,11 @@ onBeforeUnmount(() => {
 
             <!-- Card Cek Pesanan Kamu (Royal Blue Theme) -->
             <motion.div
+                id="cek-pesanan"
                 :initial="{ opacity: 0, y: 16 }"
                 :animate="{ opacity: 1, y: 0 }"
                 :transition="{ duration: 0.5, delay: 0.25, ease: 'easeOut' }"
-                class="mt-6 sm:mt-8 w-full"
+                class="mt-6 sm:mt-8 w-full scroll-mt-20"
             >
                 <div class="relative bg-gradient-to-r from-royal-900 via-royal-800 to-royal-900 rounded-xl sm:rounded-2xl p-4 sm:p-5 lg:p-6 shadow-lg shadow-royal-950/20 border border-royal-700/60 overflow-hidden text-white">
                     <!-- Subtle Glow Accent -->
@@ -183,7 +219,7 @@ onBeforeUnmount(() => {
                         </div>
 
                         <!-- Input Form (Clean Proportional Form on Royal Blue) -->
-                        <form @submit.prevent class="flex-1 flex flex-col sm:flex-row gap-2 sm:gap-2.5 max-w-2xl">
+                        <form @submit.prevent="handleCheckOrder" class="flex-1 flex flex-col sm:flex-row gap-2 sm:gap-2.5 max-w-2xl">
                             <div class="relative flex-1">
                                 <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
                                     <svg class="w-4 h-4 sm:w-4.5 sm:h-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
@@ -191,29 +227,62 @@ onBeforeUnmount(() => {
                                     </svg>
                                 </div>
                                 <input
+                                    v-model="orderQuery"
                                     type="text"
-                                    placeholder="Masukkan nomor pesanan atau nomor WhatsApp"
+                                    placeholder="Masukkan nomor pesanan (contoh: 3656 / WEBWRG...)"
                                     class="w-full pl-9 sm:pl-10 pr-3 py-2 sm:py-2.5 rounded-lg sm:rounded-xl bg-white text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-royal-400 focus:bg-white shadow-inner/5 transition-all"
+                                    required
                                 />
                             </div>
                             <motion.button
                                 type="submit"
+                                :disabled="orderLoading"
                                 :while-hover="{ scale: 1.02 }"
                                 :while-tap="{ scale: 0.96 }"
-                                class="inline-flex items-center justify-center gap-1.5 px-5 sm:px-6 py-2 sm:py-2.5 rounded-lg sm:rounded-xl bg-white text-royal-900 hover:bg-royal-50 active:bg-royal-100 text-xs sm:text-sm font-bold shadow-md shadow-royal-950/25 transition-all select-none touch-manipulation cursor-pointer shrink-0"
+                                class="inline-flex items-center justify-center gap-1.5 px-5 sm:px-6 py-2 sm:py-2.5 rounded-lg sm:rounded-xl bg-white text-royal-900 hover:bg-royal-50 active:bg-royal-100 text-xs sm:text-sm font-bold shadow-md shadow-royal-950/25 transition-all select-none touch-manipulation cursor-pointer shrink-0 disabled:opacity-70"
                             >
-                                <span>Lacak Pesanan</span>
+                                <span v-if="orderLoading">Mengecek...</span>
+                                <span v-else>Lacak Pesanan</span>
                                 <svg class="w-3.5 h-3.5 sm:w-4 sm:h-4 text-royal-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.4">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3" />
                                 </svg>
                             </motion.button>
                         </form>
                     </div>
+
+                    <!-- Alert Hasil Pencarian Live API -->
+                    <div v-if="orderResult" class="mt-4 pt-3.5 border-t border-white/15 flex flex-col gap-2 text-xs">
+                        <div class="flex items-center justify-between flex-wrap gap-2">
+                            <div class="flex items-center gap-2">
+                                <span class="font-bold text-white text-sm font-mono">{{ orderResult.ref || orderResult.id }}</span>
+                                <span class="px-2 py-0.5 rounded-full bg-emerald-400 text-slate-950 font-extrabold text-[10px] uppercase">
+                                    {{ orderResult.status }}
+                                </span>
+                            </div>
+                            <span class="text-royal-200 font-bold text-sm">Rp {{ Number(orderResult.total || orderResult.price || 0).toLocaleString('id-ID') }}</span>
+                        </div>
+                        <p class="text-royal-100 text-xs">Produk: <strong>{{ orderResult.product }}</strong> (Qty: {{ orderResult.qty }})</p>
+                        
+                        <!-- Akun / Lisensi yang diterima -->
+                        <div v-if="orderResult.accounts && orderResult.accounts.length" class="bg-black/30 p-3 rounded-lg border border-white/10 mt-1">
+                            <span class="text-emerald-300 font-semibold text-[11px] block mb-1">Data Akun / Lisensi Kamu:</span>
+                            <div v-for="(acc, i) in orderResult.accounts" :key="i" class="font-mono text-white text-[11px] whitespace-pre-wrap select-all">
+                                {{ acc }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div v-else-if="orderError" class="mt-3 pt-3 border-t border-white/15 text-xs text-rose-200 flex items-center gap-2">
+                        <svg class="w-4 h-4 text-rose-300 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                        </svg>
+                        <span>{{ orderError }}</span>
+                    </div>
                 </div>
             </motion.div>
 
-            <!-- Product Catalog & Filter (Sesuai Referensi Gambar) -->
-            <ProductCatalog />
+            <!-- Product Catalog & Filter (Data Real-time dari Waroengkuy API) -->
+            <ProductCatalog :liveProducts="props.liveProducts" />
         </main>
 
         <!-- FAQ Section (Full-Width Layar) -->

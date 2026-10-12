@@ -35,4 +35,9 @@ return [
         ],
     ],
 
+    'waroengkuy' => [
+        'url' => env('WAROENGKUY_API_URL', 'https://waroengkuy.com/api/reseller/v1'),
+        'key' => env('WAROENGKUY_API_KEY'),
+    ],
+
 ];

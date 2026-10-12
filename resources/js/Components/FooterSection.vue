@@ -9,15 +9,13 @@ const currentYear = new Date().getFullYear();
         <div class="max-w-6xl mx-auto px-4 sm:px-6 flex flex-col items-center justify-center text-center gap-3">
             <!-- Brand / Logo Center -->
             <a href="/" class="flex items-center gap-2 group">
-                <motion.div
-                    :while-hover="{ rotate: 8, scale: 1.05 }"
+                <motion.img
+                    src="/logo.png"
+                    alt="Ideostore Logo"
+                    :while-hover="{ rotate: 6, scale: 1.05 }"
                     :while-tap="{ scale: 0.92 }"
-                    class="w-7 h-7 rounded-lg bg-gradient-to-tr from-royal-800 to-royal-600 flex items-center justify-center text-white shadow-xs shadow-royal-900/25 transition-transform"
-                >
-                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
-                    </svg>
-                </motion.div>
+                    class="w-8 h-8 object-contain transition-transform"
+                />
                 <span class="text-base font-bold tracking-tight text-slate-900">
                     Ideo<span class="text-royal-700">store</span>
                 </span>
