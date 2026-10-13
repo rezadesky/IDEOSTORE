@@ -15,6 +15,19 @@
         <title inertia>{{ config('app.name', 'Laravel') }}</title>
         <link rel="icon" type="image/png" href="/favicon.png">
 
+        <script>
+            (function() {
+                try {
+                    var theme = localStorage.getItem('theme');
+                    if (theme === 'dark' || (!theme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                        document.documentElement.classList.add('dark');
+                    } else {
+                        document.documentElement.classList.remove('dark');
+                    }
+                } catch(e) {}
+            })();
+        </script>
+
         <!-- Google Fonts: Plus Jakarta Sans -->
         <link rel="preconnect" href="https://fonts.googleapis.com">
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
