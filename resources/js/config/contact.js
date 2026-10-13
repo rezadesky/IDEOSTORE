@@ -6,7 +6,7 @@
  * atau set variabel environment VITE_WHATSAPP_NUMBER di file .env.
  */
 export const contactConfig = {
-    whatsappNumber: import.meta.env.VITE_WHATSAPP_NUMBER || '6281234567890',
-    defaultMessage: 'Halo Admin, saya ingin bertanya.',
+    whatsappNumber: import.meta.env.VITE_WHATSAPP_NUMBER || '62895391960539',
+    defaultMessage: 'Halo Admin Ideostore, saya ingin bertanya tentang produk / pesanan.',
 };
 
