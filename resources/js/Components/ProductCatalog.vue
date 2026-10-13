@@ -136,11 +136,10 @@ const handleDirectCheckout = async () => {
         const data = await res.json();
 
         if (data.ok && data.order) {
-            activeOrder.value = data.order;
-            // Jika order masih pending QRIS, mulai polling status bayar
-            if (data.order.status === 'pending' && data.order.id) {
-                startPolling(data.order.id);
-            }
+            const targetId = data.order.ref || data.order.id;
+            // Arahkan pembeli langsung ke halaman pembayaran invoice resmi toko
+            window.location.href = `/lacak-pesanan?q=${encodeURIComponent(targetId)}`;
+            return;
         } else {
             orderError.value = data.error || 'Gagal memproses pesanan otomatis. Coba lagi sebentar.';
         }
@@ -860,7 +859,7 @@ const filteredCategories = computed(() => {
                                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                                 <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
                             </svg>
-                            <span>{{ orderLoading ? 'Menerbitkan QRIS...' : 'Bayar QRIS Otomatis' }}</span>
+                            <span>{{ orderLoading ? 'Menyiapkan Pembayaran...' : 'Lanjut ke Pembayaran' }}</span>
                         </button>
                     </div>
                 </div>

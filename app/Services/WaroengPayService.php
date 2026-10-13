@@ -99,4 +99,29 @@ class WaroengPayService
             return ['ok' => false, 'error' => $e->getMessage()];
         }
     }
+
+    /**
+     * Membatalkan tagihan pembayaran
+     */
+    public function cancelPayment(string $id): array
+    {
+        if (!$this->apiKey) {
+            return ['ok' => false, 'error' => 'WAROENGPAY_API_KEY belum dikonfigurasi.'];
+        }
+
+        try {
+            $response = Http::withHeaders([
+                'Authorization' => 'Bearer ' . $this->apiKey,
+                'Content-Type' => 'application/json',
+            ])->timeout(10)->post("{$this->baseUrl}/api/payments/{$id}/cancel");
+
+            if ($response->successful()) {
+                return ['ok' => true, 'payment' => $response->json()];
+            }
+
+            return ['ok' => false, 'error' => $response->json('error') ?? 'Gagal membatalkan tagihan.'];
+        } catch (\Throwable $e) {
+            return ['ok' => false, 'error' => $e->getMessage()];
+        }
+    }
 }

@@ -672,27 +672,46 @@ Route::get('/api/order/{id}', function ($id, WaroengkuyService $service) {
     return response()->json($result);
 });
 
-// Endpoint Simulasi Bayar Lunas (Khusus mode Sandbox Sandbox WaroengPay)
-Route::post('/api/order/{id}/simulate', function ($id) {
-    $wpService = app(\App\Services\WaroengPayService::class);
-    $simRes = $wpService->simulatePayment((string) $id, 'pay');
+// Endpoint Batalkan Transaksi / Pesanan
+Route::post('/api/order/{id}/cancel', function ($id, WaroengkuyService $service) {
+    $order = Order::where('order_id', (string) $id)->orWhere('ref', (string) $id)->first();
     
-    if ($simRes['ok'] ?? false) {
-        $order = Order::where('order_id', (string) $id)->orWhere('ref', (string) $id)->first();
+    // 1. Coba batalkan di WaroengPay jika transaksi berawalan WRG- atau IDEO-
+    $wpService = app(\App\Services\WaroengPayService::class);
+    $wpRes = $wpService->cancelPayment((string) $id);
+    
+    if ($wpRes['ok'] ?? false) {
         if ($order) {
-            $order->status = 'success';
-            $order->note = 'Pembayaran Sandbox WaroengPay disimulasikan lunas!';
-            $order->accounts = [
-                "Email: {$order->customer_email}",
-                "Status: Akun aktif (Simulasi Sandbox Berhasil)",
-                "Ref Transaksi: " . ($simRes['payment']['payment']['bca_ref'] ?? 'SANDBOX-SUCCESS')
-            ];
+            $order->status = 'cancelled';
+            $order->note = 'Pesanan dibatalkan oleh pelanggan.';
             $order->save();
         }
-
-        return response()->json(['ok' => true, 'order' => $order, 'payment' => $simRes['payment']]);
+        return response()->json(['ok' => true, 'message' => 'Pesanan berhasil dibatalkan.']);
     }
 
-    return response()->json(['ok' => false, 'error' => $simRes['error'] ?? 'Gagal mensimulasikan pembayaran.'], 400);
+    // 2. Coba batalkan di Waroengkuy jika ada order ID Waroengkuy
+    $wkRes = $service->cancelOrder((string) $id);
+    if ($wkRes['ok'] ?? false) {
+        if ($order) {
+            $order->status = 'cancelled';
+            $order->note = 'Pesanan dibatalkan oleh pelanggan.';
+            $order->save();
+        }
+        return response()->json(['ok' => true, 'message' => 'Pesanan berhasil dibatalkan.']);
+    }
+
+    // 3. Jika status di lokal masih pending, tandai dibatalkan di DB lokal
+    if ($order && $order->status === 'pending') {
+        $order->status = 'cancelled';
+        $order->note = 'Pesanan dibatalkan oleh pelanggan.';
+        $order->save();
+        return response()->json(['ok' => true, 'message' => 'Pesanan berhasil dibatalkan.']);
+    }
+
+    return response()->json([
+        'ok' => false, 
+        'error' => $wpRes['error'] ?? $wkRes['error'] ?? 'Pesanan tidak dapat dibatalkan atau sudah diproses.'
+    ], 400);
 });
+
 

@@ -113,4 +113,17 @@ class WaroengkuyService
             return ['ok' => false, 'error' => $e->getMessage()];
         }
     }
+
+    /**
+     * Batalkan Order QRIS (POST /orders/{id}/cancel)
+     */
+    public function cancelOrder(string $orderId): array
+    {
+        try {
+            $response = $this->client()->post('/orders/' . $orderId . '/cancel');
+            return $response->json() ?? ['ok' => false, 'error' => 'Gagal membatalkan pesanan'];
+        } catch (\Exception $e) {
+            return ['ok' => false, 'error' => $e->getMessage()];
+        }
+    }
 }
