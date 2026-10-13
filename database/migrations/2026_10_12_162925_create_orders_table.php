@@ -26,7 +26,7 @@ return new class extends Migration
             $table->string('status')->default('pending'); // pending, processing, completed, cancelled
             $table->text('accounts')->nullable(); // JSON string
             $table->text('note')->nullable();
-            $table->string('qr_url')->nullable();
+            $table->text('qr_url')->nullable();
             $table->timestamps();
         });
     }
