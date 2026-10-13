@@ -113,9 +113,14 @@ const saveItemMargin = async () => {
     savingItemMargin.value = true;
     try {
         const val = Number(itemMarginInput.value.replace(/[^0-9]/g, ''));
+        const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
         const res = await fetch('/api/products/set-margin', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'X-CSRF-TOKEN': token
+            },
             body: JSON.stringify({
                 variant_id: editingProduct.value.id,
                 margin: val
@@ -134,7 +139,7 @@ const saveItemMargin = async () => {
             alert(data.error || 'Gagal menyimpan margin produk.');
         }
     } catch (e) {
-        alert('Gagal menghubungi server.');
+        alert('Gagal menghubungi server: ' + (e?.message || 'Koneksi terputus'));
     } finally {
         savingItemMargin.value = false;
     }
