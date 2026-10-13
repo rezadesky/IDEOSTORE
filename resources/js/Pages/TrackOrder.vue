@@ -18,6 +18,7 @@ const orderResult = ref(null);
 const errorMsg = ref('');
 const copiedField = ref('');
 let pollInterval = null;
+let pollStartTime = 0;
 
 const stopPolling = () => {
     if (pollInterval) {
@@ -28,7 +29,14 @@ const stopPolling = () => {
 
 const startPolling = (orderId) => {
     stopPolling();
+    pollStartTime = Date.now();
     pollInterval = setInterval(async () => {
+        // Hentikan otomatis setelah 30 menit (hemat bandwidth & CPU)
+        if (Date.now() - pollStartTime > 30 * 60 * 1000) {
+            stopPolling();
+            return;
+        }
+
         try {
             const res = await fetch(`/api/order/${orderId}`);
             const data = await res.json();

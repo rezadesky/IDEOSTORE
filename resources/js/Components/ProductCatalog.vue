@@ -25,22 +25,7 @@ const customFields = ref({});
 const acceptNoWarranty = ref(false);
 const orderLoading = ref(false);
 const orderError = ref('');
-const activeOrder = ref(null); // Data order hasil /api/create-order
 const showFullDescription = ref(false);
-const showActivationGuide = ref(false);
-
-let pollInterval = null;
-
-const stopPolling = () => {
-    if (pollInterval) {
-        clearInterval(pollInterval);
-        pollInterval = null;
-    }
-};
-
-onBeforeUnmount(() => {
-    stopPolling();
-});
 
 const openDetail = (prod) => {
     selectedProduct.value = prod;
@@ -51,37 +36,13 @@ const openDetail = (prod) => {
     acceptNoWarranty.value = false;
     orderLoading.value = false;
     orderError.value = '';
-    activeOrder.value = null;
     showFullDescription.value = false;
-    showActivationGuide.value = false;
-    stopPolling();
     showModal.value = true;
 };
 
 const closeModal = () => {
     showModal.value = false;
-    stopPolling();
 };
-
-// Polling status QRIS hingga berstatus success / processing
-const startPolling = (orderId) => {
-    stopPolling();
-    pollInterval = setInterval(async () => {
-        try {
-            const res = await fetch(`/api/order/${orderId}`);
-            const data = await res.json();
-            if (data.ok && data.order) {
-                activeOrder.value = data.order;
-                if (data.order.status === 'success' || data.order.status === 'processing') {
-                    stopPolling();
-                }
-            }
-        } catch (e) {
-            console.error('Polling error:', e);
-        }
-    }, 4000);
-};
-
 
 // Handle Checkout Otomatis
 const handleDirectCheckout = async () => {
@@ -860,118 +821,6 @@ const filteredCategories = computed(() => {
                                 <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
                             </svg>
                             <span>{{ orderLoading ? 'Menyiapkan Pembayaran...' : 'Lanjut ke Pembayaran' }}</span>
-                        </button>
-                    </div>
-                </div>
-
-                <!-- TAMPILAN 2: QRIS PEMBAYARAN & STATUS AKTIVASI -->
-                <div v-else class="flex flex-col gap-4">
-                    <!-- Status Header -->
-                    <div class="flex items-center justify-between p-3 rounded-xl bg-slate-50 border border-slate-100">
-                        <div>
-                            <span class="text-[10px] text-slate-400 block font-mono">No. Pesanan:</span>
-                            <span class="text-xs font-bold text-slate-800 font-mono">{{ activeOrder.ref || activeOrder.id }}</span>
-                        </div>
-                        <div class="text-right">
-                            <span class="text-[10px] text-slate-400 block">Status:</span>
-                            <span
-                                :class="[
-                                    'text-[11px] font-extrabold uppercase px-2 py-0.5 rounded-full inline-block',
-                                    activeOrder.status === 'success' ? 'bg-emerald-100 text-emerald-800' :
-                                    activeOrder.status === 'processing' ? 'bg-blue-100 text-blue-800' :
-                                    'bg-amber-100 text-amber-800 animate-pulse'
-                                ]"
-                            >
-                                {{ activeOrder.status === 'pending' ? 'Menunggu Bayar' : activeOrder.status }}
-                            </span>
-                        </div>
-                    </div>
-
-                    <!-- Jika Status PENDING (Tampilkan QRIS) -->
-                    <div v-if="activeOrder.status === 'pending'" class="flex flex-col items-center justify-center gap-3 p-4 bg-royal-50/50 rounded-2xl border border-royal-100">
-                        <span class="text-xs font-bold text-royal-950">Scan QRIS untuk Bayar Otomatis</span>
-                        
-                        <!-- Gambar QRIS -->
-                        <div v-if="activeOrder.payment?.qr_url" class="p-3 bg-white rounded-xl shadow-md border border-slate-200">
-                            <img :src="activeOrder.payment.qr_url" alt="QRIS Waroengkuy" class="w-48 h-48 object-contain" />
-                        </div>
-                        
-                        <!-- Nominal Bayar (+ Kode Unik) -->
-                        <div class="text-center">
-                            <span class="text-[11px] text-slate-500 block">Total Pembayaran:</span>
-                            <span class="text-xl font-extrabold text-royal-800">
-                                {{ formatRupiah(activeOrder.payment?.amount || activeOrder.total) }}
-                            </span>
-                            <span class="text-[10px] text-slate-400 block mt-0.5">Mendukung Gopay, OVO, Dana, ShopeePay, BCA, Mandiri, dll</span>
-                        </div>
-
-                        <!-- Petunjuk Live Polling -->
-                        <div class="flex items-center gap-1.5 text-[11px] text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200 font-medium">
-                            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
-                            <span>Mendeteksi pembayaran otomatis...</span>
-                        </div>
-
-                    </div>
-
-                    <!-- Jika Status SUCCESS (Akun / Lisensi Terbit Otomatis) -->
-                    <div v-else-if="activeOrder.status === 'success'" class="flex flex-col gap-3 p-4 bg-emerald-50/70 rounded-2xl border border-emerald-200">
-                        <div class="flex items-center gap-2 text-emerald-800 font-bold text-sm">
-                            <svg class="w-5 h-5 text-emerald-600" fill="currentColor" viewBox="0 0 20 20">
-                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
-                            </svg>
-                            <span>Pembayaran Lunas! Akun Kamu Siap</span>
-                        </div>
-
-                        <!-- Data Akun Terkirim -->
-                        <div v-if="activeOrder.accounts && activeOrder.accounts.length" class="flex flex-col gap-2">
-                            <span class="text-[11px] font-bold text-slate-700">Detail Lisensi / Akun:</span>
-                            <div
-                                v-for="(acc, i) in activeOrder.accounts"
-                                :key="i"
-                                class="bg-white p-3 rounded-xl border border-slate-200 text-xs font-mono text-slate-800 whitespace-pre-wrap relative group"
-                            >
-                                {{ acc }}
-                                <button
-                                    type="button"
-                                    @click="copyText(acc)"
-                                    class="absolute top-2 right-2 px-2 py-1 rounded bg-slate-100 hover:bg-slate-200 text-[10px] font-sans font-semibold text-slate-600 cursor-pointer"
-                                >
-                                    Salin
-                                </button>
-                            </div>
-                        </div>
-
-                        <p v-if="activeOrder.note" class="text-[11px] text-slate-600 bg-white/70 p-2.5 rounded-lg border border-slate-200">
-                            <strong>Catatan Admin:</strong> {{ activeOrder.note }}
-                        </p>
-                    </div>
-
-                    <!-- Jika Status PROCESSING (Manual atau Undangan) -->
-                    <div v-else class="p-4 bg-blue-50 rounded-2xl border border-blue-200 text-xs text-blue-900 flex flex-col gap-2">
-                        <span class="font-bold text-sm">Pembayaran Diterima!</span>
-                        <p class="text-blue-700 text-xs leading-relaxed">
-                            Pesanan kamu sedang diproses oleh sistem admin pusat. Kamu juga dapat melacak statusnya kapan saja di menu <strong>Cek Pesanan</strong> di halaman utama.
-                        </p>
-                    </div>
-
-                    <!-- Tombol Aksi -->
-                    <div class="flex flex-col sm:flex-row items-center gap-2 pt-1">
-                        <a
-                            :href="'/lacak-pesanan?q=' + encodeURIComponent(activeOrder.ref || activeOrder.id)"
-                            target="_blank"
-                            class="w-full sm:flex-1 py-2.5 rounded-xl border border-royal-200 bg-royal-50 hover:bg-royal-100 text-royal-700 text-xs font-bold text-center cursor-pointer transition-colors inline-flex items-center justify-center gap-1.5"
-                        >
-                            <span>Buka Halaman Invoice</span>
-                            <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                            </svg>
-                        </a>
-                        <button
-                            type="button"
-                            @click="closeModal"
-                            class="w-full sm:flex-1 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold text-center cursor-pointer transition-colors"
-                        >
-                            Tutup
                         </button>
                     </div>
                 </div>
