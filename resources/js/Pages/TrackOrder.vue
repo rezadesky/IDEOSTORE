@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, onUnmounted } from 'vue';
 import { Head, Link } from '@inertiajs/vue3';
 import { motion, AnimatePresence } from 'motion-v';
 import FloatingWhatsApp from '../Components/FloatingWhatsApp.vue';
@@ -17,11 +17,46 @@ const loading = ref(false);
 const orderResult = ref(null);
 const errorMsg = ref('');
 const copiedField = ref('');
+let pollInterval = null;
+
+const stopPolling = () => {
+    if (pollInterval) {
+        clearInterval(pollInterval);
+        pollInterval = null;
+    }
+};
+
+const startPolling = (orderId) => {
+    stopPolling();
+    pollInterval = setInterval(async () => {
+        try {
+            const res = await fetch(`/api/order/${orderId}`);
+            const data = await res.json();
+            if (data.ok && data.order) {
+                if (orderResult.value) {
+                    orderResult.value.status = data.order.status;
+                    if (data.order.accounts && data.order.accounts.length) {
+                        orderResult.value.accounts = data.order.accounts;
+                    }
+                    if (data.order.note) {
+                        orderResult.value.note = data.order.note;
+                    }
+                }
+                if (data.order.status === 'success' || data.order.status === 'failed' || data.order.status === 'cancelled') {
+                    stopPolling();
+                }
+            }
+        } catch (e) {
+            console.error('Polling error:', e);
+        }
+    }, 4000);
+};
 
 const searchOrder = async () => {
     const q = searchQuery.value.trim();
     if (!q) return;
 
+    stopPolling();
     loading.value = true;
     errorMsg.value = '';
     orderResult.value = null;
@@ -31,6 +66,10 @@ const searchOrder = async () => {
         const data = await res.json();
         if (data.ok && data.order) {
             orderResult.value = data.order;
+            // Jika statusnya pending, nyalakan polling realtime
+            if (data.order.status === 'pending' && (data.order.id || data.order.ref)) {
+                startPolling(data.order.id || data.order.ref);
+            }
         } else {
             errorMsg.value = data.error || 'Pesanan tidak ditemukan. Pastikan ID pesanan, nomor WhatsApp, atau email sudah benar.';
         }
@@ -94,6 +133,10 @@ onMounted(() => {
         searchQuery.value = q;
         searchOrder();
     }
+});
+
+onUnmounted(() => {
+    stopPolling();
 });
 </script>
 
@@ -316,8 +359,33 @@ onMounted(() => {
                             </div>
                         </div>
 
-                        <!-- Jika status Pending atau Processing -->
-                        <div v-else class="rounded-xl border border-slate-200 bg-slate-50/60 p-4 sm:p-5 flex items-start gap-3.5">
+                        <!-- Jika status Pending (Tampilkan QRIS & Polling Otomatis) -->
+                        <div v-else-if="orderResult.status === 'pending'" class="rounded-2xl border border-royal-200 bg-royal-50/40 p-5 sm:p-6 flex flex-col items-center justify-center gap-4 text-center">
+                            <span class="text-xs font-bold text-royal-950 uppercase tracking-wider">Scan QRIS untuk Bayar Otomatis</span>
+
+                            <!-- Gambar QR Code -->
+                            <div v-if="orderResult.qr_url" class="p-3 bg-white rounded-2xl shadow-md border border-slate-200">
+                                <img :src="orderResult.qr_url" alt="QRIS Pembayaran" class="w-52 h-52 object-contain" />
+                            </div>
+
+                            <!-- Nominal Bayar -->
+                            <div>
+                                <span class="text-xs text-slate-500 block mb-0.5">Total yang Harus Dibayar:</span>
+                                <div class="text-2xl font-black text-royal-800">
+                                    Rp {{ Number(orderResult.total || orderResult.price || 0).toLocaleString('id-ID') }}
+                                </div>
+                                <span class="text-[11px] text-slate-400 block mt-1">Mendukung BCA, Mandiri, GoPay, OVO, Dana, ShopeePay, dll</span>
+                            </div>
+
+                            <!-- Deteksi Otomatis Live Polling -->
+                            <div class="flex items-center gap-2 text-xs text-emerald-600 bg-emerald-50 px-3.5 py-1.5 rounded-full border border-emerald-200 font-medium">
+                                <span class="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
+                                <span>Mendeteksi status pembayaran realtime...</span>
+                            </div>
+                        </div>
+
+                        <!-- Jika status Processing -->
+                        <div v-else-if="orderResult.status === 'processing'" class="rounded-xl border border-slate-200 bg-slate-50/60 p-4 sm:p-5 flex items-start gap-3.5">
                             <div class="w-8 h-8 rounded-lg bg-blue-100 text-royal-700 flex items-center justify-center shrink-0 mt-0.5">
                                 <svg class="w-4 h-4 animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -325,15 +393,18 @@ onMounted(() => {
                             </div>
                             <div class="text-xs sm:text-sm text-slate-600">
                                 <h4 class="font-bold text-slate-900 mb-1">
-                                    {{ orderResult.status === 'processing' ? 'Pesanan Sedang Diproses' : 'Menunggu Penyelesaian Pembayaran' }}
+                                    Pesanan Sedang Diproses
                                 </h4>
-                                <p v-if="orderResult.status === 'processing'">
-                                    Sistem / admin kami sedang memproses kredensial pesanan kamu. Halaman ini akan otomatis menampilkan data akun ketika proses selesai.
-                                </p>
-                                <p v-else>
-                                    Silakan selesaikan pembayaran QRIS Anda jika belum dibayar. Setelah pembayaran terkonfirmasi, data akun/lisensi akan langsung muncul di sini.
+                                <p>
+                                    Pembayaran berhasil diterima! Akun/lisensi Anda sedang disiapkan dan akan segera tampil di sini begitu proses selesai.
                                 </p>
                             </div>
+                        </div>
+
+                        <!-- Status Lainnya (Batal/Expired) -->
+                        <div v-else class="rounded-xl border border-rose-200 bg-rose-50/60 p-4 sm:p-5 text-xs sm:text-sm text-rose-700">
+                            <h4 class="font-bold mb-1">Status: {{ getStatusBadge(orderResult.status).label }}</h4>
+                            <p>Pesanan ini telah kedaluwarsa atau dibatalkan. Silakan buat pesanan baru jika ingin melakukan pembelian.</p>
                         </div>
 
                         <!-- Catatan Tambahan Jika Ada -->

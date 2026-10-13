@@ -100,6 +100,14 @@ Route::get('/lacak-pesanan', function (\Illuminate\Http\Request $request) {
     ]);
 });
 
+Route::get('/invoice/{id}', function (string $id) {
+    return redirect('/lacak-pesanan?q=' . urlencode($id));
+});
+
+Route::get('/order/{id}', function (string $id) {
+    return redirect('/lacak-pesanan?q=' . urlencode($id));
+});
+
 use Illuminate\Support\Facades\Auth;
 use App\Models\User;
 
@@ -365,6 +373,11 @@ Route::get('/api/check-order', function (\Illuminate\Http\Request $request, Waro
                 'qty' => $localOrder->qty,
                 'price' => $localOrder->amount,
                 'total' => $localOrder->amount,
+                'qr_url' => $localOrder->qr_url,
+                'payment' => [
+                    'amount' => $localOrder->amount,
+                    'qr_url' => $localOrder->qr_url,
+                ],
                 'accounts' => $localOrder->accounts ?: [],
                 'note' => $localOrder->note ?: '',
             ]
