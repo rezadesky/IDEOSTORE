@@ -51,6 +51,52 @@ const startPolling = (orderId) => {
     }, 4000);
 };
 
+const checkingStatus = ref(false);
+const statusFeedback = ref('');
+
+const checkTransactionStatus = async () => {
+    if (!orderResult.value) return;
+    const targetId = orderResult.value.id || orderResult.value.ref || searchQuery.value.trim();
+    if (!targetId) return;
+
+    checkingStatus.value = true;
+    statusFeedback.value = '';
+
+    try {
+        const res = await fetch(`/api/order/${encodeURIComponent(targetId)}`);
+        const data = await res.json();
+        if (data.ok && data.order) {
+            orderResult.value = {
+                ...orderResult.value,
+                ...data.order,
+                qr_url: data.order.qr_url || data.order.payment?.qr_url || orderResult.value.qr_url,
+                note: (data.order.note && !data.order.note.startsWith('{')) ? data.order.note : ''
+            };
+            
+            if (data.order.status === 'success') {
+                statusFeedback.value = 'Pembayaran terkonfirmasi LUNAS! Data akun kamu sudah siap di bawah.';
+                stopPolling();
+            } else if (data.order.status === 'processing') {
+                statusFeedback.value = 'Pembayaran terkonfirmasi! Akun kamu sedang diproses oleh sistem.';
+            } else if (data.order.status === 'cancelled') {
+                statusFeedback.value = 'Transaksi pesanan ini telah dibatalkan.';
+                stopPolling();
+            } else {
+                statusFeedback.value = 'Status: Menunggu Pembayaran QRIS. Belum ada pembayaran masuk.';
+            }
+        } else {
+            statusFeedback.value = data.error || 'Gagal mengecek status pembayaran.';
+        }
+    } catch (err) {
+        statusFeedback.value = 'Gangguan jaringan saat mengecek status.';
+    } finally {
+        checkingStatus.value = false;
+        setTimeout(() => {
+            statusFeedback.value = '';
+        }, 5000);
+    }
+};
+
 const searchOrder = async () => {
     const q = searchQuery.value.trim();
     if (!q) return;
@@ -58,7 +104,6 @@ const searchOrder = async () => {
     stopPolling();
     loading.value = true;
     errorMsg.value = '';
-    orderResult.value = null;
 
     try {
         const res = await fetch(`/api/check-order?q=${encodeURIComponent(q)}`);
@@ -75,6 +120,7 @@ const searchOrder = async () => {
             }
         } else {
             errorMsg.value = data.error || 'Pesanan tidak ditemukan. Pastikan ID pesanan, nomor WhatsApp, atau email sudah benar.';
+            orderResult.value = null;
         }
     } catch (err) {
         errorMsg.value = 'Gagal terhubung ke server. Silakan coba sesaat lagi.';
@@ -425,22 +471,27 @@ onUnmounted(() => {
                                 <span>Mendeteksi status pembayaran realtime...</span>
                             </div>
 
+                            <!-- Notifikasi Feedback Status -->
+                            <div v-if="statusFeedback" class="w-full max-w-sm px-3.5 py-2.5 rounded-xl text-xs font-semibold bg-royal-100 text-royal-900 border border-royal-200 transition-all text-center">
+                                {{ statusFeedback }}
+                            </div>
+
                             <!-- Tombol Aksi Transaksi -->
-                            <div class="flex flex-col sm:flex-row items-center justify-center gap-2.5 w-full max-w-sm pt-2">
+                            <div class="flex flex-col sm:flex-row items-center justify-center gap-2.5 w-full max-w-sm pt-1">
                                 <button
                                     type="button"
-                                    @click="searchOrder"
-                                    :disabled="loading"
-                                    class="w-full sm:flex-1 py-2.5 px-4 rounded-xl bg-royal-700 hover:bg-royal-800 text-white text-xs font-bold transition-all shadow-2xs flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
+                                    @click="checkTransactionStatus"
+                                    :disabled="checkingStatus"
+                                    class="w-full sm:flex-1 py-2.5 px-4 rounded-xl bg-royal-700 hover:bg-royal-800 active:bg-royal-900 text-white text-xs font-bold transition-all shadow-2xs flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
                                 >
-                                    <svg v-if="loading" class="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
+                                    <svg v-if="checkingStatus" class="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
                                         <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                                         <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
                                     </svg>
                                     <svg v-else class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                         <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                                     </svg>
-                                    <span>Cek Status Transaksi</span>
+                                    <span>{{ checkingStatus ? 'Mengecek...' : 'Cek Status Transaksi' }}</span>
                                 </button>
                                 <button
                                     type="button"

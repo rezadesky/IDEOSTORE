@@ -688,10 +688,11 @@ Route::get('/api/order/{id}', function ($id, WaroengkuyService $service) {
 // Endpoint Batalkan Transaksi / Pesanan
 Route::post('/api/order/{id}/cancel', function ($id, WaroengkuyService $service) {
     $order = Order::where('order_id', (string) $id)->orWhere('ref', (string) $id)->first();
+    $targetId = $order ? $order->order_id : (string) $id;
     
     // 1. Coba batalkan di WaroengPay jika transaksi berawalan WRG- atau IDEO-
     $wpService = app(\App\Services\WaroengPayService::class);
-    $wpRes = $wpService->cancelPayment((string) $id);
+    $wpRes = $wpService->cancelPayment($targetId);
     
     if ($wpRes['ok'] ?? false) {
         if ($order) {
@@ -703,7 +704,7 @@ Route::post('/api/order/{id}/cancel', function ($id, WaroengkuyService $service)
     }
 
     // 2. Coba batalkan di Waroengkuy jika ada order ID Waroengkuy
-    $wkRes = $service->cancelOrder((string) $id);
+    $wkRes = $service->cancelOrder($targetId);
     if ($wkRes['ok'] ?? false) {
         if ($order) {
             $order->status = 'cancelled';
@@ -713,7 +714,7 @@ Route::post('/api/order/{id}/cancel', function ($id, WaroengkuyService $service)
         return response()->json(['ok' => true, 'message' => 'Pesanan berhasil dibatalkan.']);
     }
 
-    // 3. Jika status di lokal masih pending, tandai dibatalkan di DB lokal
+    // 3. Fallback: jika status di database lokal masih pending, batalkan langsung di DB lokal
     if ($order && $order->status === 'pending') {
         $order->status = 'cancelled';
         $order->note = 'Pesanan dibatalkan oleh pelanggan.';
