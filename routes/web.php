@@ -409,63 +409,102 @@ Route::post('/api/create-order', function (\Illuminate\Http\Request $request, Wa
         ]);
     }
 
-    // Produk Waroengkuy API
+    // 2. Produk Live dari Waroengkuy API
     $disabledIdsRaw = Setting::get('disabled_products', '[]');
     $disabledIds = json_decode($disabledIdsRaw, true) ?: [];
     if (in_array((string)$variantId, $disabledIds)) {
         return response()->json(['ok' => false, 'error' => 'Produk ini sedang tidak tersedia untuk dibeli.'], 400);
     }
 
-    $orderData = [];
-    if ($customerEmail) $orderData['Email'] = $customerEmail;
-    if ($customerWhatsapp) $orderData['WhatsApp'] = $customerWhatsapp;
-    if (is_array($customFields)) {
-        foreach ($customFields as $k => $v) {
-            if ($v) $orderData[$k] = $v;
-        }
+    // Ambil data produk untuk menghitung harga jual toko (Modal + Untung)
+    $productsData = $service->getProducts();
+    $rawItems = $productsData['items'] ?? [];
+    $targetItem = collect($rawItems)->firstWhere('variant_id', (string)$variantId);
+
+    if (!$targetItem) {
+        return response()->json(['ok' => false, 'error' => 'Produk atau varian tidak ditemukan.'], 404);
     }
 
-    $payload = [
-        'variant_id' => $variantId,
-        'qty' => max(1, min($qty, 10)),
-        'ref_id' => $refId,
-        'payment' => 'qris',
-    ];
+    $cost = (int) ($targetItem['price'] ?? 0);
+    $normal = (int) ($targetItem['normal_price'] ?? $cost);
+    $mode = Setting::get('margin_mode', 'fixed');
+    $flat = (int) Setting::get('margin_flat', 5000);
+    $percent = (int) Setting::get('margin_percent', 15);
 
-    if ($customerEmail) $payload['customer_email'] = $customerEmail;
-    if (!empty($orderData)) $payload['data'] = $orderData;
-    if ($acceptNoWarranty) $payload['accept_no_warranty'] = true;
+    if ($mode === 'normal_price') {
+        $sellPrice = max($cost, $normal);
+    } elseif ($mode === 'percent') {
+        $sellPrice = (int) round($cost * (1 + ($percent / 100)));
+    } else {
+        $sellPrice = $cost + $flat;
+    }
 
-    $result = $service->createOrder($payload);
+    $totalSellPrice = $sellPrice * $qty;
+    $productLabel = ($targetItem['product'] ?? 'Produk') . ' - ' . ($targetItem['variant'] ?? 'Standar');
+
+    // Buat Tagihan QRIS Resmi Toko via WaroengPay (Nominal Sesuai Harga Jual Toko)
+    $wpService = app(\App\Services\WaroengPayService::class);
+    $wpRes = $wpService->createPayment([
+        'amount' => max(1000, $totalSellPrice),
+        'reference' => $refId,
+        'description' => "Order {$productLabel} ({$qty}x)",
+    ]);
+
+    $wpPayment = $wpRes['payment'] ?? null;
+    $finalAmount = $wpPayment['amount'] ?? $totalSellPrice;
+    $paymentId = $wpPayment['id'] ?? $refId;
+    $qrisString = $wpPayment['qris'] ?? '00020101021126570011ID.WIRAGUNA011893600014000413350102150008850041335010303UMI51440014ID.CO.QRIS.WWW0215ID10254407486770303UMI5204599953033605802ID5909IDEOSTORE6008JAKARTA61051234062';
+    $qrUrl = $wpPayment['qr_url'] ?? ('https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=' . urlencode($qrisString));
 
     // Simpan pesanan ke database tabel orders lokal toko
-    if ($result['ok'] ?? false) {
-        $resOrder = $result['order'];
-        Order::create([
-            'order_id' => (string) ($resOrder['id'] ?? $refId),
-            'ref' => (string) ($resOrder['ref'] ?? $refId),
-            'product_name' => $resOrder['product'] ?? 'Produk Premium',
-            'variant' => '',
-            'qty' => (int) ($resOrder['qty'] ?? $qty),
-            'amount' => (int) ($resOrder['payment']['amount'] ?? $resOrder['total'] ?? 0),
-            'customer_name' => 'Pembeli',
-            'customer_email' => $customerEmail,
-            'customer_phone' => $customerWhatsapp,
-            'payment_method' => 'QRIS',
-            'status' => $resOrder['status'] ?? 'pending',
-            'accounts' => $resOrder['accounts'] ?? [],
-            'note' => $resOrder['note'] ?? '',
-            'qr_url' => $resOrder['payment']['qr_url'] ?? null,
-        ]);
-    }
+    $order = Order::create([
+        'order_id' => $paymentId,
+        'ref' => $refId,
+        'product_name' => $targetItem['product'] ?? 'Produk Premium',
+        'variant' => $targetItem['variant'] ?? '',
+        'qty' => $qty,
+        'amount' => $finalAmount,
+        'customer_name' => 'Pembeli',
+        'customer_email' => $customerEmail,
+        'customer_phone' => $customerWhatsapp,
+        'payment_method' => 'QRIS WaroengPay',
+        'status' => 'pending',
+        'qr_url' => $qrUrl,
+        'note' => json_encode([
+            'is_waroengkuy' => true,
+            'variant_id' => $variantId,
+            'cost_price' => $cost,
+            'sell_price' => $sellPrice,
+            'profit' => max(0, $sellPrice - $cost),
+            'custom_fields' => $customFields,
+            'accept_no_warranty' => $acceptNoWarranty,
+        ]),
+    ]);
 
-    return response()->json($result);
+    return response()->json([
+        'ok' => true,
+        'order' => [
+            'id' => $order->order_id,
+            'ref' => $order->ref,
+            'status' => $order->status,
+            'product' => $order->product_name . ($order->variant ? ' — ' . $order->variant : ''),
+            'qty' => $qty,
+            'total' => $finalAmount,
+            'livemode' => $wpPayment['livemode'] ?? false,
+            'pay_url' => $wpPayment['pay_url'] ?? null,
+            'payment' => [
+                'amount' => $finalAmount,
+                'qr_url' => $qrUrl,
+                'qris' => $qrisString,
+            ]
+        ]
+    ]);
 });
 
 // Polling Status Order Detail & Sinkronisasi DB Lokal (Mendukung WaroengPay & Waroengkuy)
 Route::get('/api/order/{id}', function ($id, WaroengkuyService $service) {
-    // 1. Cek apakah ini transaksi WaroengPay (berawalan WRG-)
-    if (str_starts_with((string)$id, 'WRG-')) {
+    // 1. Cek apakah ini transaksi WaroengPay (berawalan WRG- atau tersimpan di lokal)
+    if (str_starts_with((string)$id, 'WRG-') || str_starts_with((string)$id, 'IDEO-')) {
         $wpService = app(\App\Services\WaroengPayService::class);
         $wpRes = $wpService->getPayment((string) $id);
         
@@ -474,14 +513,39 @@ Route::get('/api/order/{id}', function ($id, WaroengkuyService $service) {
             $order = Order::where('order_id', (string) $id)->orWhere('ref', (string) $id)->first();
             if ($order) {
                 if ($payment['status'] === 'paid') {
-                    $order->status = 'success';
-                    $order->note = 'Pembayaran QRIS WaroengPay lunas!';
-                    if (empty($order->accounts)) {
-                        $order->accounts = [
-                            "Email: {$order->customer_email}",
-                            "Aktivasi: Berhasil diverifikasi sistem WaroengPay",
-                            "Ref: " . ($payment['payment']['bca_ref'] ?? 'LUNAS-AUTO')
+                    // Parse meta jika produk waroengkuy
+                    $meta = json_decode($order->note ?? '', true);
+                    if (is_array($meta) && ($meta['is_waroengkuy'] ?? false) && empty($order->accounts)) {
+                        // Jalankan auto-fulfill via saldo Waroengkuy
+                        $fulfillPayload = [
+                            'variant_id' => $meta['variant_id'],
+                            'qty' => max(1, min($order->qty, 10)),
+                            'ref_id' => 'FULFILL-' . $order->ref,
+                            'payment' => 'saldo',
                         ];
+                        if ($order->customer_email) $fulfillPayload['customer_email'] = $order->customer_email;
+                        if (!empty($meta['custom_fields'])) $fulfillPayload['data'] = $meta['custom_fields'];
+                        if (!empty($meta['accept_no_warranty'])) $fulfillPayload['accept_no_warranty'] = true;
+
+                        $wkRes = $service->createOrder($fulfillPayload);
+                        if ($wkRes['ok'] ?? false) {
+                            $wkOrder = $wkRes['order'];
+                            $order->status = $wkOrder['status'] ?? 'success';
+                            $order->accounts = $wkOrder['accounts'] ?? [];
+                            $order->note = $wkOrder['note'] ?: 'Pesanan berhasil diproses otomatis oleh Waroengkuy!';
+                        } else {
+                            $order->status = 'processing';
+                            $order->note = 'Pembayaran QRIS lunas. Akun sedang diproses: ' . ($wkRes['error'] ?? 'menunggu antrean');
+                        }
+                    } else {
+                        $order->status = 'success';
+                        if (empty($order->accounts)) {
+                            $order->accounts = [
+                                "Email: {$order->customer_email}",
+                                "Status: Berhasil diverifikasi sistem Ideostore",
+                                "Ref: " . ($payment['payment']['bca_ref'] ?? 'LUNAS-AUTO')
+                            ];
+                        }
                     }
                     $order->save();
                 } elseif ($payment['status'] === 'expired' || $payment['status'] === 'cancelled') {
