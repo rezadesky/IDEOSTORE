@@ -180,6 +180,32 @@ const initProducts = () => {
 
 const productsList = ref(initProducts());
 
+// Search & Filter Produk di Admin Panel
+const productSearchQuery = ref('');
+const productCategoryFilter = ref('all');
+
+const availableCategories = computed(() => {
+    const cats = new Set();
+    productsList.value.forEach(p => {
+        if (p.category) cats.add(p.category);
+    });
+    return Array.from(cats);
+});
+
+const filteredProductsList = computed(() => {
+    const q = productSearchQuery.value.trim().toLowerCase();
+    return productsList.value.filter(prod => {
+        const matchesQuery = !q ||
+            (prod.name && prod.name.toLowerCase().includes(q)) ||
+            (prod.category && prod.category.toLowerCase().includes(q)) ||
+            (prod.id && String(prod.id).toLowerCase().includes(q));
+
+        const matchesCategory = productCategoryFilter.value === 'all' || prod.category === productCategoryFilter.value;
+
+        return matchesQuery && matchesCategory;
+    });
+});
+
 // Filtered Orders
 const filteredOrders = computed(() => {
     return orders.value.filter(order => {
@@ -709,7 +735,7 @@ const saveProduct = async () => {
                 <!-- Tab: KELOLA PRODUK -->
                 <template v-else-if="activeTab === 'products'">
                     <div class="bg-white rounded-xl sm:rounded-2xl border border-slate-200/80 shadow-2xs overflow-hidden flex flex-col">
-                        <div class="p-4 sm:p-5 border-b border-slate-100 flex items-center justify-between">
+                        <div class="p-4 sm:p-5 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3.5">
                             <div>
                                 <h2 class="text-sm sm:text-base font-bold text-slate-900">
                                     Daftar Produk & Layanan
@@ -718,9 +744,48 @@ const saveProduct = async () => {
                                     Atur harga jual, ketersediaan stok, dan status tampil di katalog
                                 </p>
                             </div>
-                            <span class="text-xs text-slate-500 font-semibold bg-slate-100 px-2.5 py-1 rounded-lg">
-                                Total: {{ productsList.length }} Produk
-                            </span>
+
+                            <!-- Search & Filter Controls -->
+                            <div class="flex items-center gap-2 flex-wrap">
+                                <!-- Kolom Cari Produk -->
+                                <div class="relative">
+                                    <input
+                                        v-model="productSearchQuery"
+                                        type="text"
+                                        placeholder="Cari nama produk / varian..."
+                                        class="pl-8 pr-7 py-1.5 rounded-lg bg-slate-50 border border-slate-200 text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-royal-600 focus:bg-white w-52 sm:w-64 transition-all"
+                                    />
+                                    <svg class="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                    </svg>
+                                    <button
+                                        v-if="productSearchQuery"
+                                        type="button"
+                                        @click="productSearchQuery = ''"
+                                        class="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-0.5 text-xs"
+                                        title="Hapus pencarian"
+                                    >
+                                        &times;
+                                    </button>
+                                </div>
+
+                                <!-- Filter Kategori -->
+                                <select
+                                    v-if="availableCategories.length > 0"
+                                    v-model="productCategoryFilter"
+                                    class="px-2.5 py-1.5 rounded-lg bg-slate-50 border border-slate-200 text-xs font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-royal-600"
+                                >
+                                    <option value="all">Semua Kategori</option>
+                                    <option v-for="cat in availableCategories" :key="cat" :value="cat">
+                                        {{ cat }}
+                                    </option>
+                                </select>
+
+                                <!-- Total Badge -->
+                                <span class="text-xs text-slate-500 font-semibold bg-slate-100 px-2.5 py-1 rounded-lg shrink-0">
+                                    {{ filteredProductsList.length }} / {{ productsList.length }} Produk
+                                </span>
+                            </div>
                         </div>
 
                         <div class="overflow-x-auto">
@@ -738,7 +803,7 @@ const saveProduct = async () => {
                                     </tr>
                                 </thead>
                                 <tbody class="divide-y divide-slate-100 text-slate-700">
-                                    <tr v-for="prod in productsList" :key="prod.id" class="hover:bg-slate-50/60 transition-colors">
+                                    <tr v-for="prod in filteredProductsList" :key="prod.id" class="hover:bg-slate-50/60 transition-colors">
                                         <td class="py-3.5 px-4 sm:px-6 font-bold text-slate-900">
                                             {{ prod.name }}
                                         </td>
@@ -799,6 +864,12 @@ const saveProduct = async () => {
                                             >
                                                 {{ prod.status === 'active' ? 'Sembunyikan' : 'Tampilkan' }}
                                             </button>
+                                        </td>
+                                    </tr>
+
+                                    <tr v-if="filteredProductsList.length === 0">
+                                        <td colspan="8" class="py-8 text-center text-slate-400">
+                                            Tidak ada produk yang cocok dengan pencarian "{{ productSearchQuery }}".
                                         </td>
                                     </tr>
                                 </tbody>
