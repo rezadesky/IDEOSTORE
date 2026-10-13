@@ -1,5 +1,6 @@
 <script setup>
 import { ref, onMounted, onBeforeUnmount } from 'vue';
+import { Link } from '@inertiajs/vue3';
 import { motion, AnimatePresence } from 'motion-v';
 import OrbitingCirclesDemo from '../Components/OrbitingCirclesDemo.vue';
 import LineShadowText from '../Components/LineShadowText.vue';
@@ -133,17 +134,15 @@ onBeforeUnmount(() => {
 
                     <!-- Action: Pesanan -->
                     <div class="flex items-center gap-2">
-                        <motion.a
-                            href="#cek-pesanan"
-                            :while-hover="{ scale: 1.03 }"
-                            :while-tap="{ scale: 0.94 }"
-                            class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-royal-800 active:bg-royal-900 text-white text-xs font-semibold shadow-xs shadow-royal-950/20 transition-all select-none touch-manipulation cursor-pointer"
+                        <Link
+                            href="/lacak-pesanan"
+                            class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-royal-700 hover:bg-royal-800 active:bg-royal-900 text-white text-xs font-semibold shadow-xs shadow-royal-950/20 transition-all select-none touch-manipulation cursor-pointer"
                         >
                             <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
                             </svg>
                             <span>Lacak Pesanan</span>
-                        </motion.a>
+                        </Link>
                     </div>
                 </div>
             </div>

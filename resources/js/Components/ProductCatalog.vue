@@ -1,6 +1,7 @@
 <script setup>
 import { ref, computed, onBeforeUnmount } from 'vue';
 import { motion } from 'motion-v';
+import productBullets from '../product_bullets.json';
 
 const props = defineProps({
     liveProducts: {
@@ -25,6 +26,8 @@ const acceptNoWarranty = ref(false);
 const orderLoading = ref(false);
 const orderError = ref('');
 const activeOrder = ref(null); // Data order hasil /api/create-order
+const showFullDescription = ref(false);
+const showActivationGuide = ref(false);
 
 let pollInterval = null;
 
@@ -49,6 +52,8 @@ const openDetail = (prod) => {
     orderLoading.value = false;
     orderError.value = '';
     activeOrder.value = null;
+    showFullDescription.value = false;
+    showActivationGuide.value = false;
     stopPolling();
     showModal.value = true;
 };
@@ -204,6 +209,89 @@ const copyText = (txt) => {
     }, 2000);
 };
 
+// Ekstraksi Petunjuk Cara Aktivasi persis dari teks API (variant_description atau description)
+const getActivationGuide = (prod) => {
+    if (!prod) return '';
+
+    // 1. Cek jika ada bagian Cara aktivasi di variant_description dari API
+    if (prod.variantDescription) {
+        const vMatch = prod.variantDescription.match(/(?:\*\*Cara aktivasi:\*\*|Cara aktivasi:?)([\s\S]*?)(?=(?:\*\*Garansi:\*\*|\*\*Catatan:\*\*|##|$))/i);
+        if (vMatch && vMatch[1]) {
+            return vMatch[1].trim();
+        }
+    }
+
+    // 2. Cek dari field description produk dari API (bagian "Cara pakai setelah beli:" atau sejenisnya)
+    const desc = prod.description || '';
+    const dMatch = desc.match(/(?:Cara pakai setelah beli:?|Cara aktivasi:?)\s*([^\n\r]+(?:\n[^\n\r]+)*)/i);
+    if (dMatch && dMatch[1]) {
+        // Ambil paragraf tersebut utuh dari API
+        return dMatch[1].trim();
+    }
+
+    // Jika produk tidak memiliki paragraf cara pakai spesifik di deskripsinya, gunakan petunjuk variant_description jika ada
+    if (prod.variantDescription) {
+        return prod.variantDescription.trim();
+    }
+
+    return '';
+};
+
+// Ekstraksi Ringkasan Poin persis sesuai data produk dari penyedia API
+const getSummaryPoints = (prod) => {
+    if (!prod) return [];
+    
+    // 1. Cek dari daftar bullet resmi penyedia produk API (productBullets)
+    const slug = (prod.baseProduct || prod.name || '')
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-|-$/g, '');
+
+    if (productBullets && productBullets[slug] && productBullets[slug].length) {
+        return productBullets[slug];
+    }
+
+    // 2. Fallback parser berbasis isi deskripsi asli produk
+    const points = [];
+    const desc = prod.description || '';
+    const vDesc = prod.variantDescription || '';
+    const combined = (desc + ' ' + vDesc).toLowerCase();
+
+    if (combined.includes('hp, pc, atau browser') || combined.includes('hp, pc & browser')) {
+        points.push({ type: 'check', text: 'Bisa di HP, PC & browser' });
+    } else if (combined.includes('hp atau pc') || combined.includes('hp (android/ios) & pc')) {
+        points.push({ type: 'check', text: 'Bisa di HP (Android/iOS) & PC' });
+    } else if (combined.includes('hanya bisa di tv') || (prod.variant || '').toLowerCase().includes('tv')) {
+        points.push({ type: 'check', text: 'Hanya bisa digunakan di Smart TV' });
+    }
+
+    if (combined.includes('akun yang disediakan oleh toko') || combined.includes('akun dari toko')) {
+        points.push({ type: 'check', text: 'Login pakai akun dari toko (bukan akunmu)' });
+    } else if (combined.includes('akun milikmu sendiri') || combined.includes('akun google milikmu sendiri')) {
+        points.push({ type: 'check', text: 'Pakai akun milikmu sendiri' });
+    }
+
+    if (combined.includes('keluar dulu dari akun lama')) {
+        points.push({ type: 'check', text: 'Keluar dulu dari akun lama sebelum login' });
+    }
+
+    if (combined.includes('jangan ubah') || combined.includes('dilarang mengganti') || combined.includes('jangan ganti password')) {
+        points.push({ type: 'cross', text: 'Jangan ubah email / password akun' });
+    }
+
+    if (prod.isAuto) {
+        points.push({ type: 'check', text: 'Dikirim otomatis setelah pembayaran' });
+    }
+    if (prod.warrantyDays) {
+        points.push({ type: 'check', text: `Bergaransi ${prod.warrantyDays} hari sesuai ketentuan` });
+    }
+
+    return points;
+};
+
+
+
+
 // Computed grouped categories dari Live Products API
 const filteredCategories = computed(() => {
     const q = searchQuery.value.trim().toLowerCase();
@@ -236,6 +324,7 @@ const filteredCategories = computed(() => {
             isAuto: item.type === 'auto',
             image: item.image || item.image_original || null,
             description: item.description || '',
+            variantDescription: item.variant_description || '',
             warrantyDays: item.warranty_days,
             noWarranty: item.no_warranty,
             color: getCategoryColor(item.category),
@@ -489,8 +578,15 @@ const filteredCategories = computed(() => {
         </div>
 
         <!-- MODAL CHECKOUT OTOMATIS WEB (QRIS INSTAN & REALTIME AKTIVASI) -->
-        <div v-if="showModal && selectedProduct" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
-            <div class="bg-white rounded-2xl max-w-lg w-full p-5 sm:p-6 border border-slate-100 shadow-2xl flex flex-col gap-4 max-h-[92vh] overflow-y-auto">
+        <div
+            v-if="showModal && selectedProduct"
+            @click.self="closeModal"
+            class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs transition-opacity cursor-pointer"
+        >
+            <div
+                @click.stop
+                class="bg-white rounded-2xl max-w-lg w-full p-5 sm:p-6 border border-slate-100 shadow-2xl flex flex-col gap-4 max-h-[92vh] overflow-y-auto cursor-default"
+            >
                 <!-- Modal Header -->
                 <div class="flex items-start justify-between gap-3">
                     <div class="flex items-center gap-3">
@@ -624,9 +720,117 @@ const filteredCategories = computed(() => {
                         </div>
                     </div>
 
-                    <!-- Deskripsi Produk -->
-                    <div v-if="selectedProduct.description" class="text-[11px] text-slate-500 leading-relaxed whitespace-pre-line max-h-36 overflow-y-auto bg-slate-50/50 p-3 rounded-xl border border-slate-100">
-                        {{ selectedProduct.description }}
+                    <!-- BOX RINGKASAN WARNA PUTIH MINIMALIS -->
+                    <div class="rounded-2xl bg-white p-4 border border-slate-200/90 shadow-2xs flex flex-col gap-3">
+                        <!-- Label RINGKAS -->
+                        <span class="text-[10px] font-bold tracking-wider text-slate-400 uppercase">
+                            RINGKAS
+                        </span>
+
+                        <!-- Daftar Checklist & Larangan -->
+                        <ul class="space-y-2 text-xs">
+                            <li
+                                v-for="(point, idx) in getSummaryPoints(selectedProduct)"
+                                :key="idx"
+                                class="flex items-start gap-2.5 leading-snug"
+                            >
+                                <!-- Icon Centang Hijau -->
+                                <svg
+                                    v-if="point.type === 'check'"
+                                    class="w-4 h-4 text-emerald-600 shrink-0 mt-0.5"
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                    stroke="currentColor"
+                                    stroke-width="2.5"
+                                >
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                                </svg>
+                                <!-- Icon Silang Kuning/Warning -->
+                                <svg
+                                    v-else
+                                    class="w-4 h-4 text-amber-500 shrink-0 mt-0.5"
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                    stroke="currentColor"
+                                    stroke-width="2.5"
+                                >
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+
+                                <span :class="point.type === 'cross' ? 'text-slate-500' : 'text-slate-800 font-medium'">
+                                    {{ point.text }}
+                                </span>
+                            </li>
+                        </ul>
+
+                        <!-- Link: Detail lengkap > -->
+                        <div class="pt-1">
+                            <button
+                                type="button"
+                                @click="showFullDescription = !showFullDescription"
+                                class="inline-flex items-center gap-1 text-xs font-bold text-royal-700 hover:text-royal-800 transition-colors cursor-pointer select-none"
+                            >
+                                <span>{{ showFullDescription ? 'Sembunyikan detail' : 'Detail lengkap' }}</span>
+                                <svg
+                                    class="w-3.5 h-3.5 transition-transform"
+                                    :class="showFullDescription ? 'rotate-90' : ''"
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                    stroke="currentColor"
+                                    stroke-width="2.5"
+                                >
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
+                                </svg>
+                            </button>
+
+                            <!-- Seluruh Keterangan Produk (Muncul saat Detail Lengkap diklik) -->
+                            <div
+                                v-if="showFullDescription"
+                                class="mt-3 p-3.5 rounded-xl bg-slate-50 border border-slate-200/80 text-xs text-slate-700 leading-relaxed max-h-48 overflow-y-auto whitespace-pre-line"
+                            >
+                                <div v-if="selectedProduct.variantDescription" class="mb-2 p-2 rounded-lg bg-royal-50 border border-royal-100 text-royal-900">
+                                    <strong class="text-royal-800 block text-[10px] mb-0.5">DETAIL VARIAN:</strong>
+                                    {{ selectedProduct.variantDescription }}
+                                </div>
+                                {{ selectedProduct.description }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- BUTTON: CARA AKTIVASI (MUNCUL HANYA JIKA ADA KETERANGAN AKTIVASI DI API) -->
+                    <div v-if="getActivationGuide(selectedProduct)" class="rounded-xl bg-white border border-slate-200/90 shadow-2xs overflow-hidden">
+                        <button
+                            type="button"
+                            @click="showActivationGuide = !showActivationGuide"
+                            class="w-full px-4 py-3 flex items-center justify-between text-left text-xs sm:text-sm font-bold text-slate-800 hover:bg-slate-50 transition-colors cursor-pointer select-none"
+                        >
+                            <div class="flex items-center gap-2">
+                                <svg class="w-4 h-4 text-royal-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                                </svg>
+                                <span>Cara aktivasi</span>
+                            </div>
+                            <svg
+                                class="w-4 h-4 text-slate-400 transition-transform duration-200"
+                                :class="showActivationGuide ? 'rotate-90' : ''"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                                stroke-width="2"
+                            >
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
+                            </svg>
+                        </button>
+
+                        <!-- Keterangan Cara Aktivasi (Persis Teks Asli dari API) -->
+                        <div
+                            v-if="showActivationGuide"
+                            class="px-4 pb-4 pt-1 text-xs text-slate-700 leading-relaxed border-t border-slate-100"
+                        >
+                            <p class="whitespace-pre-line bg-slate-50 p-3 rounded-lg border border-slate-200/70 text-slate-700">
+                                {{ getActivationGuide(selectedProduct) }}
+                            </p>
+                        </div>
                     </div>
 
                     <!-- Error Alert -->

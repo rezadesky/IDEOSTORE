@@ -80,6 +80,13 @@ Route::get('/', function (WaroengkuyService $service) {
     ]);
 });
 
+Route::get('/lacak-pesanan', function (\Illuminate\Http\Request $request) {
+    return Inertia::render('TrackOrder', [
+        'initialQuery' => (string) $request->query('q', ''),
+    ]);
+});
+
+
 Route::get('/adminpanel', function (WaroengkuyService $service) {
     $balanceData = $service->getBalance();
     $productsData = $service->getProducts();
