@@ -2,6 +2,8 @@
 import { ref, onMounted } from 'vue';
 import { Head, Link } from '@inertiajs/vue3';
 import { motion, AnimatePresence } from 'motion-v';
+import FloatingWhatsApp from '../Components/FloatingWhatsApp.vue';
+import { contactConfig } from '../config/contact';
 
 const props = defineProps({
     initialQuery: {
@@ -346,8 +348,9 @@ onMounted(() => {
                             Mengalami kendala pada pesanan Anda?
                         </span>
                         <a
-                            href="https://wa.me/6281234567890?text=Halo%20Admin%20Ideostore,%20saya%20mau%20konfirmasi%20pesanan%20dengan%20ID%20"
+                            :href="'https://wa.me/' + contactConfig.whatsappNumber.replace(/[^0-9]/g, '') + '?text=' + encodeURIComponent('Halo Admin Ideostore, saya mau konfirmasi pesanan dengan ID ' + (orderResult.ref || orderResult.id))"
                             target="_blank"
+                            rel="noopener noreferrer"
                             class="inline-flex items-center gap-1.5 font-bold text-royal-700 hover:text-royal-800 transition-colors"
                         >
                             <span>Hubungi Bantuan WhatsApp</span>
@@ -359,6 +362,9 @@ onMounted(() => {
                 </motion.div>
             </AnimatePresence>
         </main>
+
+        <!-- Floating WhatsApp Button -->
+        <FloatingWhatsApp />
     </div>
 </template>
 

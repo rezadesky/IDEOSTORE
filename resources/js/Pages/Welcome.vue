@@ -7,6 +7,7 @@ import LineShadowText from '../Components/LineShadowText.vue';
 import ProductCatalog from '../Components/ProductCatalog.vue';
 import FaqSection from '../Components/FaqSection.vue';
 import FooterSection from '../Components/FooterSection.vue';
+import FloatingWhatsApp from '../Components/FloatingWhatsApp.vue';
 
 const props = defineProps({
     version: String,
@@ -289,5 +290,8 @@ onBeforeUnmount(() => {
 
         <!-- Footer Section -->
         <FooterSection />
+
+        <!-- Floating WhatsApp Button -->
+        <FloatingWhatsApp />
     </div>
 </template>
