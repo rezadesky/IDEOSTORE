@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Mail;
 use Inertia\Inertia;
 use App\Services\WaroengkuyService;
 use App\Models\Setting;
@@ -465,6 +466,21 @@ Route::post('/api/create-order', function (\Illuminate\Http\Request $request, Wa
             'note' => $wpPayment ? 'Tagihan WaroengPay terbit otomatis.' : 'Menunggu verifikasi admin toko.',
         ]);
 
+        // Kirim email tagihan ke pembeli jika mencantumkan email
+        if (!empty($order->customer_email) && filter_var($order->customer_email, FILTER_VALIDATE_EMAIL)) {
+            try {
+                Mail::send('emails.order_invoice', [
+                    'order' => $order,
+                    'payUrl' => $wpPayment['pay_url'] ?? null,
+                ], function ($m) use ($order) {
+                    $m->to($order->customer_email)
+                      ->subject("Tagihan Pembayaran: {$order->order_id} - Ideostore");
+                });
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::error('Gagal kirim email tagihan: ' . $e->getMessage());
+            }
+        }
+
         return response()->json([
             'ok' => true,
             'order' => [
@@ -564,6 +580,21 @@ Route::post('/api/create-order', function (\Illuminate\Http\Request $request, Wa
         ]),
     ]);
 
+    // Kirim email tagihan ke pembeli jika mencantumkan email
+    if (!empty($order->customer_email) && filter_var($order->customer_email, FILTER_VALIDATE_EMAIL)) {
+        try {
+            Mail::send('emails.order_invoice', [
+                'order' => $order,
+                'payUrl' => $wpPayment['pay_url'] ?? null,
+            ], function ($m) use ($order) {
+                $m->to($order->customer_email)
+                  ->subject("Tagihan Pembayaran: {$order->order_id} - Ideostore");
+            });
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('Gagal kirim email tagihan: ' . $e->getMessage());
+        }
+    }
+
     return response()->json([
         'ok' => true,
         'order' => [
@@ -631,6 +662,20 @@ Route::get('/api/order/{id}', function ($id, WaroengkuyService $service) {
                         }
                     }
                     $order->save();
+
+                    // Kirim email notifikasi pesanan selesai & kredensial akun
+                    if (in_array($order->status, ['success', 'completed']) && !empty($order->customer_email) && filter_var($order->customer_email, FILTER_VALIDATE_EMAIL)) {
+                        try {
+                            Mail::send('emails.order_completed', [
+                                'order' => $order,
+                            ], function ($m) use ($order) {
+                                $m->to($order->customer_email)
+                                  ->subject("Pesanan Berhasil: {$order->order_id} - Ideostore");
+                            });
+                        } catch (\Throwable $e) {
+                            \Illuminate\Support\Facades\Log::error('Gagal kirim email order completed: ' . $e->getMessage());
+                        }
+                    }
                 } elseif ($payment['status'] === 'expired' || $payment['status'] === 'cancelled') {
                     $order->status = $payment['status'];
                     $order->save();
