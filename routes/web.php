@@ -79,167 +79,206 @@ Route::get('/', function (WaroengkuyService $service) {
         'liveProducts' => $items,
     ]);
 });
-
 Route::get('/lacak-pesanan', function (\Illuminate\Http\Request $request) {
     return Inertia::render('TrackOrder', [
         'initialQuery' => (string) $request->query('q', ''),
     ]);
 });
 
+use Illuminate\Support\Facades\Auth;
+use App\Models\User;
 
-Route::get('/adminpanel', function (WaroengkuyService $service) {
-    $balanceData = $service->getBalance();
-    $productsData = $service->getProducts();
-    $items = getProcessedProducts($productsData['items'] ?? [], false);
+// Route Autentikasi Admin
+Route::get('/login', function () {
+    if (Auth::check()) {
+        return redirect('/adminpanel');
+    }
+    return Inertia::render('Auth/Login', [
+        'error' => session('error'),
+    ]);
+})->name('login');
 
-    $settings = [
-        'margin_mode' => Setting::get('margin_mode', 'fixed'),
-        'margin_flat' => (int) Setting::get('margin_flat', 5000),
-        'margin_percent' => (int) Setting::get('margin_percent', 15),
-        'hide_out_of_stock' => (bool) Setting::get('hide_out_of_stock', false),
-    ];
+Route::post('/login', function (\Illuminate\Http\Request $request) {
+    $credentials = $request->validate([
+        'email' => ['required', 'email'],
+        'password' => ['required'],
+    ]);
 
-    // Ambil semua order toko dari database lokal
-    $localOrders = Order::orderBy('id', 'desc')->get()->map(function ($o) {
-        $isApi = !str_starts_with((string)$o->order_id, 'WRG-') && !str_starts_with((string)$o->ref, 'IDEO-');
-        return [
-            'id' => $o->order_id,
-            'ref' => $o->ref,
-            'customer' => $o->customer_name ?: 'Pembeli',
-            'phone' => $o->customer_phone ?: '-',
-            'email' => $o->customer_email ?: '-',
-            'product' => $o->product_name . ($o->variant ? ' (' . $o->variant . ')' : ''),
-            'price' => 'Rp ' . number_format($o->amount, 0, ',', '.'),
-            'payment' => $o->payment_method,
-            'status' => in_array($o->status, ['completed', 'success']) ? 'completed' : ($o->status === 'processing' ? 'processing' : 'pending'),
-            'date' => $o->created_at->format('d M Y, H:i'),
-            'type' => $isApi ? 'Otomatis API Waroengkuy' : 'Produk Toko Sendiri',
-            'is_api' => $isApi,
-            'accounts' => $o->accounts ?: [],
-            'note' => $o->note ?: '',
+    $remember = (bool) $request->boolean('remember');
+
+    if (Auth::attempt($credentials, $remember)) {
+        $request->session()->regenerate();
+        return redirect()->intended('/adminpanel');
+    }
+
+    return back()->withErrors([
+        'email' => 'Email atau password yang Anda masukkan salah.',
+    ])->onlyInput('email');
+});
+
+Route::post('/logout', function (\Illuminate\Http\Request $request) {
+    Auth::logout();
+    $request->session()->invalidate();
+    $request->session()->regenerateToken();
+    return redirect('/login');
+})->name('logout');
+
+// Rute Admin Panel (Wajib Login)
+Route::middleware('auth')->group(function () {
+    Route::get('/adminpanel', function (WaroengkuyService $service) {
+        $balanceData = $service->getBalance();
+        $productsData = $service->getProducts();
+        $items = getProcessedProducts($productsData['items'] ?? [], false);
+
+        $settings = [
+            'margin_mode' => Setting::get('margin_mode', 'fixed'),
+            'margin_flat' => (int) Setting::get('margin_flat', 5000),
+            'margin_percent' => (int) Setting::get('margin_percent', 15),
+            'hide_out_of_stock' => (bool) Setting::get('hide_out_of_stock', false),
         ];
+
+        // Ambil semua order toko dari database lokal
+        $localOrders = Order::orderBy('id', 'desc')->get()->map(function ($o) {
+            $isApi = !str_starts_with((string)$o->order_id, 'WRG-') && !str_starts_with((string)$o->ref, 'IDEO-');
+            return [
+                'id' => $o->order_id,
+                'ref' => $o->ref,
+                'customer' => $o->customer_name ?: 'Pembeli',
+                'phone' => $o->customer_phone ?: '-',
+                'email' => $o->customer_email ?: '-',
+                'product' => $o->product_name . ($o->variant ? ' (' . $o->variant . ')' : ''),
+                'price' => 'Rp ' . number_format($o->amount, 0, ',', '.'),
+                'payment' => $o->payment_method,
+                'status' => in_array($o->status, ['completed', 'success']) ? 'completed' : ($o->status === 'processing' ? 'processing' : 'pending'),
+                'date' => $o->created_at->format('d M Y, H:i'),
+                'type' => $isApi ? 'Otomatis API Waroengkuy' : 'Produk Toko Sendiri',
+                'is_api' => $isApi,
+                'accounts' => $o->accounts ?: [],
+                'note' => $o->note ?: '',
+            ];
+        });
+
+        return Inertia::render('AdminPanel', [
+            'reseller' => $balanceData['reseller'] ?? null,
+            'liveProducts' => $items,
+            'settings' => $settings,
+            'initialOrders' => $localOrders,
+        ]);
     });
 
-    return Inertia::render('AdminPanel', [
-        'reseller' => $balanceData['reseller'] ?? null,
-        'liveProducts' => $items,
-        'settings' => $settings,
-        'initialOrders' => $localOrders,
-    ]);
-});
+    // Endpoint Tambah / Edit Produk Custom Milik Toko
+    Route::post('/api/products/custom', function (\Illuminate\Http\Request $request) {
+        $data = json_decode($request->getContent(), true) ?: $request->all();
 
-// Endpoint Tambah / Edit Produk Custom Milik Toko
-Route::post('/api/products/custom', function (\Illuminate\Http\Request $request) {
-    $data = json_decode($request->getContent(), true) ?: $request->all();
+        $name = trim($data['name'] ?? '');
+        $price = (int) ($data['price'] ?? 0);
 
-    $name = trim($data['name'] ?? '');
-    $price = (int) ($data['price'] ?? 0);
-
-    if (!$name || $price <= 0) {
-        return response()->json(['ok' => false, 'error' => 'Nama produk dan harga jual wajib diisi.'], 400);
-    }
-
-    $cp = CustomProduct::create([
-        'name' => $name,
-        'variant' => trim($data['variant'] ?? 'Standar'),
-        'category' => trim($data['category'] ?? 'Aplikasi Premium'),
-        'price' => $price,
-        'normal_price' => !empty($data['normal_price']) ? (int) $data['normal_price'] : $price,
-        'stock' => isset($data['stock']) && $data['stock'] !== '' ? (int) $data['stock'] : null,
-        'type' => $data['type'] ?? 'manual',
-        'description' => trim($data['description'] ?? ''),
-        'status' => 'active',
-    ]);
-
-    return response()->json([
-        'ok' => true,
-        'message' => 'Produk berhasil ditambahkan ke katalog!',
-        'product' => $cp->toCatalogItem(),
-    ]);
-});
-
-// Endpoint Toggle Status Produk (Aktif / Nonaktif)
-Route::post('/api/products/toggle-status', function (\Illuminate\Http\Request $request) {
-    $data = json_decode($request->getContent(), true) ?: $request->all();
-    $variantId = (string) ($data['variant_id'] ?? $request->input('variant_id') ?? '');
-    if (!$variantId) {
-        return response()->json(['ok' => false, 'error' => 'variant_id wajib diisi'], 400);
-    }
-
-    // Jika produk custom
-    if (str_starts_with($variantId, 'cp_')) {
-        $id = str_replace('cp_', '', $variantId);
-        $cp = CustomProduct::find($id);
-        if ($cp) {
-            $cp->status = $cp->status === 'active' ? 'inactive' : 'active';
-            $cp->save();
-            return response()->json(['ok' => true, 'variant_id' => $variantId, 'status' => $cp->status]);
+        if (!$name || $price <= 0) {
+            return response()->json(['ok' => false, 'error' => 'Nama produk dan harga jual wajib diisi.'], 400);
         }
-    }
 
-    $disabledIdsRaw = Setting::get('disabled_products', '[]');
-    $disabledIds = json_decode($disabledIdsRaw, true) ?: [];
+        $cp = CustomProduct::create([
+            'name' => $name,
+            'variant' => trim($data['variant'] ?? 'Standar'),
+            'category' => trim($data['category'] ?? 'Aplikasi Premium'),
+            'price' => $price,
+            'normal_price' => !empty($data['normal_price']) ? (int) $data['normal_price'] : $price,
+            'stock' => isset($data['stock']) && $data['stock'] !== '' ? (int) $data['stock'] : null,
+            'type' => $data['type'] ?? 'manual',
+            'description' => trim($data['description'] ?? ''),
+            'status' => 'active',
+        ]);
 
-    if (in_array($variantId, $disabledIds)) {
-        $disabledIds = array_values(array_diff($disabledIds, [$variantId]));
-        $status = 'active';
-    } else {
-        $disabledIds[] = $variantId;
-        $status = 'inactive';
-    }
+        return response()->json([
+            'ok' => true,
+            'message' => 'Produk berhasil ditambahkan ke katalog!',
+            'product' => $cp->toCatalogItem(),
+        ]);
+    });
 
-    Setting::set('disabled_products', json_encode(array_values(array_unique($disabledIds))));
+    // Endpoint Toggle Status Produk (Aktif / Nonaktif)
+    Route::post('/api/products/toggle-status', function (\Illuminate\Http\Request $request) {
+        $data = json_decode($request->getContent(), true) ?: $request->all();
+        $variantId = (string) ($data['variant_id'] ?? $request->input('variant_id') ?? '');
+        if (!$variantId) {
+            return response()->json(['ok' => false, 'error' => 'variant_id wajib diisi'], 400);
+        }
 
-    return response()->json([
-        'ok' => true,
-        'variant_id' => $variantId,
-        'status' => $status,
-        'message' => 'Status produk berhasil diperbarui.'
-    ]);
-});
+        // Jika produk custom
+        if (str_starts_with($variantId, 'cp_')) {
+            $id = str_replace('cp_', '', $variantId);
+            $cp = CustomProduct::find($id);
+            if ($cp) {
+                $cp->status = $cp->status === 'active' ? 'inactive' : 'active';
+                $cp->save();
+                return response()->json(['ok' => true, 'variant_id' => $variantId, 'status' => $cp->status]);
+            }
+        }
 
-// Endpoint Simpan Pengaturan Toko (Margin & Hide Out of Stock)
-Route::post('/api/settings/margin', function (\Illuminate\Http\Request $request) {
-    $mode = $request->input('margin_mode', 'fixed');
-    $flat = (int) $request->input('margin_flat', 5000);
-    $percent = (int) $request->input('margin_percent', 15);
-    $hideOutOfStock = (bool) $request->input('hide_out_of_stock', false);
+        $disabledIdsRaw = Setting::get('disabled_products', '[]');
+        $disabledIds = json_decode($disabledIdsRaw, true) ?: [];
 
-    Setting::set('margin_mode', $mode);
-    Setting::set('margin_flat', $flat);
-    Setting::set('margin_percent', $percent);
-    Setting::set('hide_out_of_stock', $hideOutOfStock ? '1' : '0');
+        if (in_array($variantId, $disabledIds)) {
+            $disabledIds = array_values(array_diff($disabledIds, [$variantId]));
+            $status = 'active';
+        } else {
+            $disabledIds[] = $variantId;
+            $status = 'inactive';
+        }
 
-    return response()->json([
-        'ok' => true,
-        'message' => 'Pengaturan toko berhasil disimpan!',
-        'settings' => [
-            'margin_mode' => $mode,
-            'margin_flat' => $flat,
-            'margin_percent' => $percent,
-            'hide_out_of_stock' => $hideOutOfStock,
-        ]
-    ]);
-});
+        Setting::set('disabled_products', json_encode(array_values(array_unique($disabledIds))));
 
-// Endpoint Update Status Pesanan (Manual dari Admin)
-Route::post('/api/orders/update-status', function (\Illuminate\Http\Request $request) {
-    $data = json_decode($request->getContent(), true) ?: $request->all();
-    $orderId = $data['order_id'] ?? null;
-    $newStatus = $data['status'] ?? 'completed';
+        return response()->json([
+            'ok' => true,
+            'variant_id' => $variantId,
+            'status' => $status,
+            'message' => 'Status produk berhasil diperbarui.'
+        ]);
+    });
 
-    if (!$orderId) {
-        return response()->json(['ok' => false, 'error' => 'order_id wajib diisi'], 400);
-    }
+    // Endpoint Simpan Pengaturan Toko (Margin & Hide Out of Stock)
+    Route::post('/api/settings/margin', function (\Illuminate\Http\Request $request) {
+        $mode = $request->input('margin_mode', 'fixed');
+        $flat = (int) $request->input('margin_flat', 5000);
+        $percent = (int) $request->input('margin_percent', 15);
+        $hideOutOfStock = (bool) $request->input('hide_out_of_stock', false);
 
-    $order = Order::where('order_id', $orderId)->orWhere('ref', $orderId)->first();
-    if ($order) {
-        $order->status = $newStatus;
-        $order->save();
-        return response()->json(['ok' => true, 'order' => $order]);
-    }
+        Setting::set('margin_mode', $mode);
+        Setting::set('margin_flat', $flat);
+        Setting::set('margin_percent', $percent);
+        Setting::set('hide_out_of_stock', $hideOutOfStock ? '1' : '0');
 
-    return response()->json(['ok' => false, 'error' => 'Pesanan tidak ditemukan di database lokal.'], 404);
+        return response()->json([
+            'ok' => true,
+            'message' => 'Pengaturan toko berhasil disimpan!',
+            'settings' => [
+                'margin_mode' => $mode,
+                'margin_flat' => $flat,
+                'margin_percent' => $percent,
+                'hide_out_of_stock' => $hideOutOfStock,
+            ]
+        ]);
+    });
+
+    // Endpoint Update Status Pesanan (Manual dari Admin)
+    Route::post('/api/orders/update-status', function (\Illuminate\Http\Request $request) {
+        $data = json_decode($request->getContent(), true) ?: $request->all();
+        $orderId = $data['order_id'] ?? null;
+        $newStatus = $data['status'] ?? 'completed';
+
+        if (!$orderId) {
+            return response()->json(['ok' => false, 'error' => 'order_id wajib diisi'], 400);
+        }
+
+        $order = Order::where('order_id', $orderId)->orWhere('ref', $orderId)->first();
+        if ($order) {
+            $order->status = $newStatus;
+            $order->save();
+            return response()->json(['ok' => true, 'order' => $order]);
+        }
+
+        return response()->json(['ok' => false, 'error' => 'Pesanan tidak ditemukan di database lokal.'], 404);
+    });
 });
 
 // Endpoint Cek Pesanan (Mendukung ID, Ref, Email, atau WhatsApp)
