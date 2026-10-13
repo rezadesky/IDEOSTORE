@@ -95,19 +95,50 @@ const openDetail = (order) => {
     showDetailModal.value = true;
 };
 
-// Modal Tambah / Edit Produk
-const showProductModal = ref(false);
-const savingProduct = ref(false);
-const newProduct = ref({
-    name: '',
-    variant: 'Standar',
-    category: 'Aplikasi Premium',
-    price: '',
-    originalPrice: '',
-    stock: '',
-    description: '',
-    type: 'manual'
-});
+// Modal Edit Margin Khusus Per Item
+const showMarginModal = ref(false);
+const editingProduct = ref(null);
+const itemMarginInput = ref('');
+const savingItemMargin = ref(false);
+
+const openMarginModal = (prod) => {
+    editingProduct.value = prod;
+    // Default nilai input margin saat ini
+    itemMarginInput.value = prod.rawProfit !== undefined ? String(prod.rawProfit) : '5000';
+    showMarginModal.value = true;
+};
+
+const saveItemMargin = async () => {
+    if (!editingProduct.value) return;
+    savingItemMargin.value = true;
+    try {
+        const val = Number(itemMarginInput.value.replace(/[^0-9]/g, ''));
+        const res = await fetch('/api/products/set-margin', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                variant_id: editingProduct.value.id,
+                margin: val
+            })
+        });
+        const data = await res.json();
+        if (data.ok) {
+            // Update objek reaktif di tabel
+            const rawCost = editingProduct.value.raw?.cost_price || editingProduct.value.raw?.price || 0;
+            editingProduct.value.rawProfit = val;
+            editingProduct.value.profit = formatRupiah(val);
+            editingProduct.value.price = formatRupiah(rawCost + val);
+            editingProduct.value.hasCustomMargin = true;
+            showMarginModal.value = false;
+        } else {
+            alert(data.error || 'Gagal menyimpan margin produk.');
+        }
+    } catch (e) {
+        alert('Gagal menghubungi server.');
+    } finally {
+        savingItemMargin.value = false;
+    }
+};
 
 // Format Rupiah
 const formatRupiah = (val) => {
@@ -851,7 +882,15 @@ const saveProduct = async () => {
                                                 {{ prod.status === 'active' ? 'Aktif' : 'Nonaktif' }}
                                             </span>
                                         </td>
-                                        <td class="py-3.5 px-4 sm:px-6 text-right">
+                                        <td class="py-3.5 px-4 sm:px-6 text-right space-x-1.5 whitespace-nowrap">
+                                            <button
+                                                type="button"
+                                                @click="openMarginModal(prod)"
+                                                class="px-2.5 py-1 rounded-md text-[10px] font-bold transition-colors cursor-pointer border bg-royal-50 text-royal-700 border-royal-200 hover:bg-royal-100"
+                                                title="Atur margin untung khusus produk ini"
+                                            >
+                                                Ubah Margin
+                                            </button>
                                             <button
                                                 type="button"
                                                 @click="toggleProductStatus(prod)"
@@ -1282,6 +1321,102 @@ const saveProduct = async () => {
                         >
                             <span v-if="savingProduct">Menyimpan...</span>
                             <span v-else>Simpan ke Katalog</span>
+                        </button>
+                    </div>
+                </form>
+            </motion.div>
+        </div>
+
+        <!-- Modal Edit Margin Khusus Per Item -->
+        <div
+            v-if="showMarginModal && editingProduct"
+            class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs"
+        >
+            <motion.div
+                :initial="{ opacity: 0, scale: 0.95 }"
+                :animate="{ opacity: 1, scale: 1 }"
+                class="bg-white rounded-2xl max-w-sm w-full p-5 sm:p-6 shadow-2xl border border-slate-100 flex flex-col gap-4 text-xs"
+            >
+                <!-- Header -->
+                <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                    <div>
+                        <h3 class="font-bold text-slate-900 text-sm">Atur Margin Produk</h3>
+                        <p class="text-[11px] text-slate-500 truncate max-w-[220px]">{{ editingProduct.name }}</p>
+                    </div>
+                    <button
+                        type="button"
+                        @click="showMarginModal = false"
+                        class="p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 cursor-pointer"
+                    >
+                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+
+                <!-- Info Harga Modal -->
+                <div class="p-3 rounded-xl bg-slate-50 border border-slate-200/60 space-y-1.5">
+                    <div class="flex justify-between items-center text-slate-600">
+                        <span>Harga Modal API:</span>
+                        <span class="font-bold text-slate-900 font-mono">{{ editingProduct.costPrice }}</span>
+                    </div>
+                    <div class="flex justify-between items-center text-slate-600">
+                        <span>Harga Jual Saat Ini:</span>
+                        <span class="font-bold text-royal-700 font-mono">{{ editingProduct.price }}</span>
+                    </div>
+                </div>
+
+                <!-- Form Margin -->
+                <form @submit.prevent="saveItemMargin" class="space-y-3">
+                    <div>
+                        <label class="block font-bold text-slate-700 mb-1">
+                            Margin Untung Bersih (Rp)
+                        </label>
+                        <div class="relative">
+                            <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold">Rp</span>
+                            <input
+                                v-model="itemMarginInput"
+                                type="number"
+                                step="500"
+                                required
+                                placeholder="Misal: 5000"
+                                class="w-full pl-9 pr-3 py-2 rounded-lg bg-slate-50 border border-slate-200 text-xs font-mono font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-royal-600 focus:bg-white"
+                            />
+                        </div>
+                        <p class="text-[10px] text-slate-400 mt-1">
+                            *Untung ini otomatis ditambahkan ke harga modal untuk pembeli.
+                        </p>
+                    </div>
+
+                    <!-- Tombol Cepat Margin -->
+                    <div class="flex items-center gap-1.5 flex-wrap">
+                        <button
+                            v-for="amt in [2000, 3000, 5000, 10000, 15000]"
+                            :key="amt"
+                            type="button"
+                            @click="itemMarginInput = String(amt)"
+                            class="px-2 py-0.5 rounded-md bg-slate-100 hover:bg-royal-50 hover:text-royal-700 text-slate-600 font-medium text-[10px] transition-colors"
+                        >
+                            +{{ amt.toLocaleString('id-ID') }}
+                        </button>
+                    </div>
+
+                    <!-- Footer Action -->
+                    <div class="flex items-center justify-end gap-2 pt-3 border-t border-slate-100 mt-2">
+                        <button
+                            type="button"
+                            @click="showMarginModal = false"
+                            class="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold cursor-pointer"
+                        >
+                            Batal
+                        </button>
+                        <button
+                            type="submit"
+                            :disabled="savingItemMargin"
+                            class="px-3.5 py-1.5 rounded-lg bg-royal-700 hover:bg-royal-800 text-white font-semibold cursor-pointer disabled:opacity-60 flex items-center gap-1.5 shadow-sm"
+                        >
+                            <span v-if="savingItemMargin">Menyimpan...</span>
+                            <span v-else>Terapkan Margin</span>
                         </button>
                     </div>
                 </form>

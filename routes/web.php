@@ -32,6 +32,10 @@ function getProcessedProducts(array $items, bool $filterForBuyer = false): array
         $processed[] = $item;
     }
 
+    // Ambil margin khusus per item (variant_id => margin_amount)
+    $productMarginsRaw = Setting::get('product_margins', '{}');
+    $productMargins = json_decode($productMarginsRaw, true) ?: [];
+
     // 2. Sertakan produk live dari Waroengkuy
     foreach ($items as $item) {
         $variantId = (string) ($item['variant_id'] ?? '');
@@ -46,12 +50,21 @@ function getProcessedProducts(array $items, bool $filterForBuyer = false): array
         $cost = (int) ($item['price'] ?? 0);
         $normal = (int) ($item['normal_price'] ?? $cost);
 
-        if ($mode === 'normal_price') {
-            $sellPrice = max($cost, $normal);
-        } elseif ($mode === 'percent') {
-            $sellPrice = (int) round($cost * (1 + ($percent / 100)));
+        // Jika produk memiliki margin khusus per-item
+        if (isset($productMargins[$variantId]) && is_numeric($productMargins[$variantId])) {
+            $itemMargin = (int) $productMargins[$variantId];
+            $sellPrice = $cost + $itemMargin;
+            $hasCustomMargin = true;
         } else {
-            $sellPrice = $cost + $flat;
+            $itemMargin = null;
+            $hasCustomMargin = false;
+            if ($mode === 'normal_price') {
+                $sellPrice = max($cost, $normal);
+            } elseif ($mode === 'percent') {
+                $sellPrice = (int) round($cost * (1 + ($percent / 100)));
+            } else {
+                $sellPrice = $cost + $flat;
+            }
         }
 
         $profit = max(0, $sellPrice - $cost);
@@ -60,6 +73,8 @@ function getProcessedProducts(array $items, bool $filterForBuyer = false): array
         $item['sell_price'] = $sellPrice;
         $item['profit'] = $profit;
         $item['price'] = $sellPrice;
+        $item['custom_margin'] = $itemMargin;
+        $item['has_custom_margin'] = $hasCustomMargin;
         $item['is_disabled'] = $isDisabled;
         $item['status'] = $isDisabled ? 'inactive' : 'active';
         $item['is_custom'] = false;
@@ -260,6 +275,48 @@ Route::middleware('auth')->group(function () {
         ]);
     });
 
+    // Endpoint Update Margin Khusus Per Item / Produk
+    Route::post('/api/products/set-margin', function (\Illuminate\Http\Request $request) {
+        $data = json_decode($request->getContent(), true) ?: $request->all();
+        $variantId = (string) ($data['variant_id'] ?? '');
+        $margin = isset($data['margin']) && $data['margin'] !== '' ? (int) $data['margin'] : null;
+
+        if (!$variantId) {
+            return response()->json(['ok' => false, 'error' => 'variant_id wajib diisi'], 400);
+        }
+
+        // Jika custom product
+        if (str_starts_with($variantId, 'cp_')) {
+            $id = str_replace('cp_', '', $variantId);
+            $cp = CustomProduct::find($id);
+            if ($cp) {
+                if ($margin !== null) {
+                    $cp->price = max(1000, $margin); // Untuk produk custom, harga jual langsung diupdate
+                    $cp->save();
+                }
+                return response()->json(['ok' => true, 'variant_id' => $variantId, 'price' => $cp->price]);
+            }
+        }
+
+        $marginsRaw = Setting::get('product_margins', '{}');
+        $margins = json_decode($marginsRaw, true) ?: [];
+
+        if ($margin === null || $margin < 0) {
+            unset($margins[$variantId]);
+        } else {
+            $margins[$variantId] = $margin;
+        }
+
+        Setting::set('product_margins', json_encode($margins));
+
+        return response()->json([
+            'ok' => true,
+            'variant_id' => $variantId,
+            'margin' => $margin,
+            'message' => 'Margin produk berhasil diperbarui!'
+        ]);
+    });
+
     // Endpoint Update Status Pesanan (Manual dari Admin)
     Route::post('/api/orders/update-status', function (\Illuminate\Http\Request $request) {
         $data = json_decode($request->getContent(), true) ?: $request->all();
@@ -431,12 +488,19 @@ Route::post('/api/create-order', function (\Illuminate\Http\Request $request, Wa
     $flat = (int) Setting::get('margin_flat', 5000);
     $percent = (int) Setting::get('margin_percent', 15);
 
-    if ($mode === 'normal_price') {
-        $sellPrice = max($cost, $normal);
-    } elseif ($mode === 'percent') {
-        $sellPrice = (int) round($cost * (1 + ($percent / 100)));
+    $productMarginsRaw = Setting::get('product_margins', '{}');
+    $productMargins = json_decode($productMarginsRaw, true) ?: [];
+
+    if (isset($productMargins[(string)$variantId]) && is_numeric($productMargins[(string)$variantId])) {
+        $sellPrice = $cost + (int) $productMargins[(string)$variantId];
     } else {
-        $sellPrice = $cost + $flat;
+        if ($mode === 'normal_price') {
+            $sellPrice = max($cost, $normal);
+        } elseif ($mode === 'percent') {
+            $sellPrice = (int) round($cost * (1 + ($percent / 100)));
+        } else {
+            $sellPrice = $cost + $flat;
+        }
     }
 
     $totalSellPrice = $sellPrice * $qty;
