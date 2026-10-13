@@ -112,7 +112,8 @@ const saveItemMargin = async () => {
     if (!editingProduct.value) return;
     savingItemMargin.value = true;
     try {
-        const val = Number(itemMarginInput.value.replace(/[^0-9]/g, ''));
+        const rawInput = itemMarginInput.value !== null && itemMarginInput.value !== undefined ? String(itemMarginInput.value) : '0';
+        const val = Number(rawInput.replace(/[^0-9]/g, '')) || 0;
         const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
         const res = await fetch('/api/products/set-margin', {
             method: 'POST',
