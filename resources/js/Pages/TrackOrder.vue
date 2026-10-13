@@ -34,13 +34,12 @@ const startPolling = (orderId) => {
             const data = await res.json();
             if (data.ok && data.order) {
                 if (orderResult.value) {
-                    orderResult.value.status = data.order.status;
-                    if (data.order.accounts && data.order.accounts.length) {
-                        orderResult.value.accounts = data.order.accounts;
-                    }
-                    if (data.order.note) {
-                        orderResult.value.note = data.order.note;
-                    }
+                    orderResult.value = {
+                        ...orderResult.value,
+                        ...data.order,
+                        qr_url: data.order.qr_url || data.order.payment?.qr_url || orderResult.value.qr_url,
+                        note: data.order.note || ''
+                    };
                 }
                 if (data.order.status === 'success' || data.order.status === 'failed' || data.order.status === 'cancelled') {
                     stopPolling();
@@ -65,7 +64,11 @@ const searchOrder = async () => {
         const res = await fetch(`/api/check-order?q=${encodeURIComponent(q)}`);
         const data = await res.json();
         if (data.ok && data.order) {
-            orderResult.value = data.order;
+            orderResult.value = {
+                ...data.order,
+                qr_url: data.order.qr_url || data.order.payment?.qr_url || '',
+                note: (data.order.note && !data.order.note.startsWith('{')) ? data.order.note : ''
+            };
             // Jika statusnya pending, nyalakan polling realtime
             if (data.order.status === 'pending' && (data.order.id || data.order.ref)) {
                 startPolling(data.order.id || data.order.ref);
@@ -481,7 +484,7 @@ onUnmounted(() => {
                         </div>
 
                         <!-- Catatan Tambahan Jika Ada -->
-                        <div v-if="orderResult.note" class="text-xs text-slate-500 bg-slate-50 p-3 rounded-lg border border-slate-200/60">
+                        <div v-if="orderResult.note && !orderResult.note.startsWith('{')" class="text-xs text-slate-500 bg-slate-50 p-3 rounded-lg border border-slate-200/60">
                             <span class="font-semibold text-slate-700">Catatan:</span> {{ orderResult.note }}
                         </div>
                     </div>

@@ -379,7 +379,13 @@ Route::get('/api/check-order', function (\Illuminate\Http\Request $request, Waro
                     'qr_url' => $localOrder->qr_url,
                 ],
                 'accounts' => $localOrder->accounts ?: [],
-                'note' => $localOrder->note ?: '',
+                'note' => (function() use ($localOrder) {
+                    $note = (string) ($localOrder->note ?? '');
+                    if (str_starts_with(trim($note), '{') && str_ends_with(trim($note), '}')) {
+                        return '';
+                    }
+                    return $note;
+                })(),
             ]
         ]);
     }
@@ -641,9 +647,16 @@ Route::get('/api/order/{id}', function ($id, WaroengkuyService $service) {
                     'qty' => $order ? $order->qty : 1,
                     'total' => $payment['amount'] ?? ($order ? $order->amount : 0),
                     'accounts' => $order ? $order->accounts : [],
-                    'note' => $order ? $order->note : '',
+                    'note' => (function() use ($order) {
+                        $note = (string) ($order->note ?? '');
+                        if (str_starts_with(trim($note), '{') && str_ends_with(trim($note), '}')) {
+                            return '';
+                        }
+                        return $note;
+                    })(),
                     'livemode' => $payment['livemode'] ?? false,
                     'pay_url' => $payment['pay_url'] ?? null,
+                    'qr_url' => $order ? $order->qr_url : null,
                     'payment' => [
                         'amount' => $payment['amount'],
                         'qr_url' => $order ? $order->qr_url : null,
