@@ -8,6 +8,7 @@ import ProductCatalog from '../Components/ProductCatalog.vue';
 import FaqSection from '../Components/FaqSection.vue';
 import FooterSection from '../Components/FooterSection.vue';
 import FloatingWhatsApp from '../Components/FloatingWhatsApp.vue';
+import AnimatedThemeToggler from '../Components/AnimatedThemeToggler.vue';
 
 const props = defineProps({
     version: String,
@@ -133,8 +134,10 @@ onBeforeUnmount(() => {
                         </span>
                     </a>
 
-                    <!-- Action: Pesanan -->
-                    <div class="flex items-center gap-2">
+                    <!-- Action: Theme Toggler & Pesanan -->
+                    <div class="flex items-center gap-2.5">
+                        <AnimatedThemeToggler />
+                        
                         <Link
                             href="/lacak-pesanan"
                             class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-royal-700 hover:bg-royal-800 active:bg-royal-900 text-white text-xs font-semibold shadow-xs shadow-royal-950/20 transition-all select-none touch-manipulation cursor-pointer"

@@ -3,6 +3,7 @@ import { ref, onMounted, onUnmounted } from 'vue';
 import { Head, Link } from '@inertiajs/vue3';
 import { motion, AnimatePresence } from 'motion-v';
 import FloatingWhatsApp from '../Components/FloatingWhatsApp.vue';
+import AnimatedThemeToggler from '../Components/AnimatedThemeToggler.vue';
 import { contactConfig } from '../config/contact';
 
 const props = defineProps({
@@ -256,16 +257,20 @@ onUnmounted(() => {
                         </span>
                     </Link>
 
-                    <!-- Back to Catalog Link -->
-                    <Link
-                        href="/"
-                        class="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-600 hover:text-royal-700 transition-colors"
-                    >
-                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-                        </svg>
-                        <span>Kembali ke Beranda</span>
-                    </Link>
+                    <!-- Actions -->
+                    <div class="flex items-center gap-2.5">
+                        <AnimatedThemeToggler />
+
+                        <Link
+                            href="/"
+                            class="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:text-royal-700 dark:hover:text-royal-400 transition-colors"
+                        >
+                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                            </svg>
+                            <span>Kembali ke Beranda</span>
+                        </Link>
+                    </div>
                 </div>
             </div>
         </header>
