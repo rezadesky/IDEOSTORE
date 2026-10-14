@@ -185,6 +185,32 @@ const copyToClipboard = (text, fieldName) => {
     }, 2000);
 };
 
+const copyAllAccounts = () => {
+    if (!orderResult.value?.accounts?.length) return;
+    const text = orderResult.value.accounts.join('\n---\n');
+    copyToClipboard(text, 'all_accounts');
+};
+
+const downloadQrImage = async () => {
+    if (!orderResult.value?.qr_url) return;
+    try {
+        const response = await fetch(orderResult.value.qr_url);
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `QRIS-${orderResult.value.ref || orderResult.value.id || 'pembayaran'}.png`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+    } catch (e) {
+        window.open(orderResult.value.qr_url, '_blank');
+    }
+};
+
+const showQrGuide = ref(false);
+
 const getStatusBadge = (status) => {
     const s = (status || '').toLowerCase();
     if (s === 'completed' || s === 'sukses' || s === 'success') {
@@ -454,7 +480,19 @@ onUnmounted(() => {
                                         Data Akun / Lisensi Kamu
                                     </span>
                                 </div>
-                                <span class="text-[11px] text-emerald-700 font-medium">Siap Digunakan</span>
+                                <div class="flex items-center gap-2">
+                                    <button
+                                        v-if="orderResult.accounts.length > 1"
+                                        @click="copyAllAccounts"
+                                        class="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-bold transition-colors cursor-pointer flex items-center gap-1 shadow-2xs"
+                                    >
+                                        <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                                        </svg>
+                                        <span>{{ copiedField === 'all_accounts' ? 'Semua Disalin!' : 'Salin Semua' }}</span>
+                                    </button>
+                                    <span class="text-[11px] text-emerald-700 font-medium hidden sm:inline">Siap Digunakan</span>
+                                </div>
                             </div>
 
                             <div class="space-y-2">
@@ -482,9 +520,42 @@ onUnmounted(() => {
                         <div v-else-if="orderResult.status === 'pending'" class="rounded-2xl border border-royal-200 bg-royal-50/40 p-5 sm:p-6 flex flex-col items-center justify-center gap-4 text-center">
                             <span class="text-xs font-bold text-royal-950 uppercase tracking-wider">Scan QRIS untuk Bayar Otomatis</span>
 
-                            <!-- Gambar QR Code -->
-                            <div v-if="orderResult.qr_url" class="p-3 bg-white rounded-2xl shadow-md border border-slate-200">
-                                <img :src="orderResult.qr_url" alt="QRIS Pembayaran" class="w-52 h-52 object-contain" />
+                            <!-- Gambar QR Code & Download -->
+                            <div v-if="orderResult.qr_url" class="flex flex-col items-center gap-2">
+                                <div class="p-3 bg-white rounded-2xl shadow-md border border-slate-200">
+                                    <img :src="orderResult.qr_url" alt="QRIS Pembayaran" class="w-52 h-52 object-contain" />
+                                </div>
+                                <div class="flex items-center gap-2 mt-1">
+                                    <button
+                                        type="button"
+                                        @click="downloadQrImage"
+                                        class="px-3 py-1.5 rounded-lg bg-white border border-slate-200 hover:bg-slate-50 text-[11px] font-bold text-slate-700 shadow-2xs flex items-center gap-1.5 transition-colors cursor-pointer"
+                                    >
+                                        <svg class="w-3.5 h-3.5 text-royal-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                                        </svg>
+                                        <span>Download QR</span>
+                                    </button>
+                                    <button
+                                        type="button"
+                                        @click="showQrGuide = !showQrGuide"
+                                        class="px-3 py-1.5 rounded-lg bg-royal-100 hover:bg-royal-200 text-[11px] font-bold text-royal-800 transition-colors cursor-pointer"
+                                    >
+                                        {{ showQrGuide ? 'Tutup Panduan' : 'Cara Bayar 1 HP' }}
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Petunjuk Cara Bayar dari 1 HP (Galeri) -->
+                            <div v-if="showQrGuide" class="w-full max-w-sm p-3.5 rounded-xl bg-white border border-royal-200 text-left text-xs text-slate-600 space-y-1.5 shadow-2xs">
+                                <p class="font-bold text-royal-950 text-[11px] uppercase tracking-wider mb-1">Cara Bayar Dari 1 HP:</p>
+                                <ol class="list-decimal list-inside space-y-1 text-slate-700">
+                                    <li>Klik tombol <strong>Download QR</strong> di atas (atau screenshot layar).</li>
+                                    <li>Buka m-Banking (BCA, Mandiri, BRI, dll) atau e-Wallet (GoPay, OVO, Dana, ShopeePay).</li>
+                                    <li>Pilih menu <strong>QRIS / Pay</strong>, lalu klik ikon <strong>Galeri / Gambar</strong>.</li>
+                                    <li>Pilih gambar QR yang baru saja di-download / screenshot.</li>
+                                    <li>Periksa nominal & selesaikan pembayaran. Sistem akan mendeteksi otomatis!</li>
+                                </ol>
                             </div>
 
                             <!-- Nominal Bayar -->
