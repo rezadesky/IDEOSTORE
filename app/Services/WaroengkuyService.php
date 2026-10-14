@@ -40,7 +40,7 @@ class WaroengkuyService
     }
 
     /**
-     * Ambil Katalog Produk (Dengan Cache 2 Menit sesuai anjuran docs.md)
+     * Ambil Katalog Produk (Dengan Cache 2 Menit & Backup Cache Zero-Downtime)
      */
     public function getProducts(bool $forceRefresh = false): array
     {
@@ -51,8 +51,20 @@ class WaroengkuyService
         return Cache::remember('waroengkuy_products', 120, function () {
             try {
                 $response = $this->client()->get('/products');
-                return $response->json() ?? ['ok' => false, 'items' => []];
+                $data = $response->json();
+                if (is_array($data) && ($data['ok'] ?? false) && !empty($data['items'])) {
+                    // Simpan backup cache yang bertahan lama (24 jam)
+                    Cache::put('waroengkuy_products_backup', $data, 86400);
+                    return $data;
+                }
+                // Jika respons tidak ok, coba ambil dari backup
+                return Cache::get('waroengkuy_products_backup') ?? $data ?? ['ok' => false, 'items' => []];
             } catch (\Exception $e) {
+                // Jika koneksi timeout/down, sajikan dari backup cache
+                $backup = Cache::get('waroengkuy_products_backup');
+                if ($backup && is_array($backup)) {
+                    return $backup;
+                }
                 return ['ok' => false, 'items' => [], 'error' => $e->getMessage()];
             }
         });

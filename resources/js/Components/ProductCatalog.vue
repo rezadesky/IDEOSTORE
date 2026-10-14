@@ -50,9 +50,15 @@ const closeModal = () => {
 const handleDirectCheckout = async () => {
     if (!selectedProduct.value) return;
     
-    // Validasi nomor WhatsApp
-    const cleanWa = customerWhatsapp.value.replace(/[^0-9]/g, '');
-    if (!cleanWa || cleanWa.length < 9) {
+    // Validasi & normalisasi nomor WhatsApp
+    let cleanWa = customerWhatsapp.value.replace(/[^0-9]/g, '');
+    if (cleanWa.startsWith('08')) {
+        cleanWa = '62' + cleanWa.substring(1);
+    } else if (cleanWa.startsWith('8')) {
+        cleanWa = '62' + cleanWa;
+    }
+
+    if (!cleanWa || cleanWa.length < 10) {
         orderError.value = 'Mohon masukkan nomor WhatsApp aktif yang valid (mis. 08123456789).';
         return;
     }
@@ -192,8 +198,16 @@ const getActivationGuide = (prod) => {
     }
 
     // Jika produk tidak memiliki paragraf cara pakai spesifik di deskripsinya, gunakan petunjuk variant_description jika ada
+    let result = '';
     if (prod.variantDescription) {
-        return prod.variantDescription.trim();
+        result = prod.variantDescription.trim();
+    }
+
+    if (result) {
+        return result
+            .replace(/^\s*\*{0,2}Cara\s+aktivasi:?\*{0,2}\s*/i, '')
+            .replace(/\*\*(.*?)\*\*/g, '$1')
+            .trim();
     }
 
     return '';

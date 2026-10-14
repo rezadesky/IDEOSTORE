@@ -358,9 +358,22 @@ Route::get('/api/check-order', function (\Illuminate\Http\Request $request, Waro
 
     // 1. Cek dulu di database lokal toko
     $cleanPhone = preg_replace('/[^0-9]/', '', $q);
+    $phoneVariants = [];
+    if (!empty($cleanPhone)) {
+        $phoneVariants[] = $cleanPhone;
+        if (str_starts_with($cleanPhone, '08')) {
+            $phoneVariants[] = '62' . substr($cleanPhone, 1);
+        } elseif (str_starts_with($cleanPhone, '628')) {
+            $phoneVariants[] = '0' . substr($cleanPhone, 2);
+        } elseif (str_starts_with($cleanPhone, '8')) {
+            $phoneVariants[] = '62' . $cleanPhone;
+            $phoneVariants[] = '0' . $cleanPhone;
+        }
+    }
+
     $localOrder = Order::where('order_id', $q)
         ->orWhere('ref', $q)
-        ->orWhere('customer_phone', $cleanPhone)
+        ->orWhereIn('customer_phone', $phoneVariants)
         ->orWhere('customer_email', $q)
         ->orderBy('id', 'desc')
         ->first();
