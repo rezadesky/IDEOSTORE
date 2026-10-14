@@ -9,8 +9,9 @@ use App\Models\CustomProduct;
 use App\Models\Order;
 
 // Helper kalkulasi harga jual dan filter produk
-function getProcessedProducts(array $items, bool $filterForBuyer = false): array
-{
+if (!function_exists('getProcessedProducts')) {
+    function getProcessedProducts(array $items, bool $filterForBuyer = false): array
+    {
     $mode = Setting::get('margin_mode', 'fixed');
     $flat = (int) Setting::get('margin_flat', 5000);
     $percent = (int) Setting::get('margin_percent', 15);
@@ -84,6 +85,7 @@ function getProcessedProducts(array $items, bool $filterForBuyer = false): array
     }
 
     return $processed;
+    }
 }
 
 Route::get('/', function (WaroengkuyService $service) {
