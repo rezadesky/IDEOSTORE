@@ -7,10 +7,21 @@
         <meta name="description" content="Ideostore - Pusat langganan aplikasi premium terpercaya, akun AI, produktivitas, dan hiburan dengan sistem otomatis QRIS.">
         <link rel="canonical" href="{{ url()->current() }}">
         <meta name="robots" content="index, follow">
-        <meta property="og:title" content="Ideostore - Pusat Layanan Aplikasi Premium">
-        <meta property="og:description" content="Pusat langganan aplikasi premium terpercaya, akun AI, produktivitas, dan hiburan dengan sistem otomatis QRIS.">
+
+        <!-- Open Graph / WhatsApp / Facebook -->
+        <meta property="og:site_name" content="Ideostore">
+        <meta property="og:title" content="Ideostore - Pusat Layanan Aplikasi Premium Terpercaya">
+        <meta property="og:description" content="Pusat langganan aplikasi premium terpercaya, akun AI, produktivitas, dan hiburan dengan sistem otomatis QRIS instan.">
         <meta property="og:url" content="{{ url()->current() }}">
         <meta property="og:type" content="website">
+        <meta property="og:image" content="{{ asset('logo.png') }}">
+        <meta property="og:image:alt" content="Ideostore Logo">
+
+        <!-- Twitter Card -->
+        <meta name="twitter:card" content="summary_large_image">
+        <meta name="twitter:title" content="Ideostore - Pusat Layanan Aplikasi Premium">
+        <meta name="twitter:description" content="Langganan aplikasi premium terpercaya, akun AI, produktivitas, dan hiburan otomatis QRIS.">
+        <meta name="twitter:image" content="{{ asset('logo.png') }}">
 
         <title inertia>{{ config('app.name', 'Laravel') }}</title>
         <link rel="icon" type="image/png" href="/favicon.png">

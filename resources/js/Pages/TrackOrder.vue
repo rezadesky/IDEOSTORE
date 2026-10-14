@@ -222,6 +222,24 @@ const getStatusBadge = (status) => {
     };
 };
 
+const getWhatsAppUrl = () => {
+    if (!orderResult.value) return 'https://wa.me/' + contactConfig.whatsappNumber.replace(/[^0-9]/g, '');
+    const num = contactConfig.whatsappNumber.replace(/[^0-9]/g, '');
+    const orderId = orderResult.value.ref || orderResult.value.id || '-';
+    const prod = orderResult.value.product_name || orderResult.value.name || 'Produk';
+    const total = Number(orderResult.value.total || orderResult.value.price || 0).toLocaleString('id-ID');
+    const status = orderResult.value.status || 'pending';
+    
+    let msg = `Halo Admin Ideostore, saya ingin konfirmasi pesanan:\n\n`
+            + `• No. Pesanan: ${orderId}\n`
+            + `• Produk: ${prod}\n`
+            + `• Total: Rp ${total}\n`
+            + `• Status: ${status.toUpperCase()}\n\n`
+            + `Mohon bantuannya, terima kasih!`;
+            
+    return `https://wa.me/${num}?text=${encodeURIComponent(msg)}`;
+};
+
 onMounted(() => {
     // Cek query parameter di URL jika ada
     const urlParams = new URLSearchParams(window.location.search);
@@ -559,7 +577,7 @@ onUnmounted(() => {
                             Mengalami kendala pada pesanan Anda?
                         </span>
                         <a
-                            :href="'https://wa.me/' + contactConfig.whatsappNumber.replace(/[^0-9]/g, '') + '?text=' + encodeURIComponent('Halo Admin Ideostore, saya mau konfirmasi pesanan dengan ID ' + (orderResult.ref || orderResult.id))"
+                            :href="getWhatsAppUrl()"
                             target="_blank"
                             rel="noopener noreferrer"
                             class="inline-flex items-center gap-1.5 font-bold text-royal-700 hover:text-royal-800 transition-colors"
