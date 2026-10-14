@@ -26,6 +26,7 @@ const acceptNoWarranty = ref(false);
 const orderLoading = ref(false);
 const orderError = ref('');
 const showFullDescription = ref(false);
+const showActivationGuide = ref(false);
 
 const openDetail = (prod) => {
     selectedProduct.value = prod;
@@ -37,6 +38,7 @@ const openDetail = (prod) => {
     orderLoading.value = false;
     orderError.value = '';
     showFullDescription.value = false;
+    showActivationGuide.value = false;
     showModal.value = true;
 };
 
